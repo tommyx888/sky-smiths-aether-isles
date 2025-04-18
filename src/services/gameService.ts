@@ -42,12 +42,8 @@ export const fetchPlayerIsland = async (): Promise<PlayerIsland> => {
 
   // If no island exists, create one
   if (!islands || islands.length === 0) {
-    const { data: newIsland, error: createError } = await createPlayerIsland();
-    if (createError) {
-      console.error("Error creating island:", createError);
-      throw createError;
-    }
-    return newIsland as PlayerIsland;
+    const newIsland = await createPlayerIsland();
+    return newIsland;
   }
   
   return islands[0] as PlayerIsland;
