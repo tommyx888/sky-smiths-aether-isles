@@ -1,46 +1,48 @@
 
-import { createContext, useContext, useEffect, useReducer } from "react";
-import { IslandData, Building, ResourceAmount, PlayerData } from "@/types/game";
-import { BUILDINGS_CONFIG, INITIAL_RESOURCES, GRID_SIZE, RESOURCE_PRODUCTION_INTERVAL } from "@/config/gameConfig";
+import { createContext, useContext, useReducer, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PlayerData, IslandData, Building, BuildingType, ResourceAmount } from "@/types/game";
+import { BUILDINGS_CONFIG } from "@/config/gameConfig";
+import * as gameService from "@/services/gameService";
+
+// Initial state
+const initialState: { player: PlayerData } = {
+  player: {
+    id: "",
+    name: "",
+    island: {
+      id: "",
+      name: "Island",
+      level: 1,
+      buildings: [],
+      resources: { steam: 200, ore: 150, aether: 100 },
+      gridSize: { width: 10, height: 10 }
+    },
+    airships: [],
+    alliance: undefined
+  }
+};
 
 // Action types
 type GameAction =
-  | { type: "ADD_BUILDING"; building: Building }
-  | { type: "UPGRADE_BUILDING"; buildingId: string }
-  | { type: "REMOVE_BUILDING"; buildingId: string }
-  | { type: "UPDATE_RESOURCES"; resources: Partial<ResourceAmount> }
-  | { type: "RENAME_ISLAND"; name: string };
-
-// Game state
-interface GameState {
-  player: PlayerData;
-  selectedBuilding: Building | null;
-  buildMode: boolean;
-}
-
-// Initial state
-const createInitialState = (): GameState => ({
-  player: {
-    id: uuidv4(),
-    name: "SkySmith",
-    island: {
-      id: uuidv4(),
-      name: "Novice Isle",
-      level: 1,
-      buildings: [],
-      resources: INITIAL_RESOURCES,
-      gridSize: GRID_SIZE
-    },
-    airships: []
-  },
-  selectedBuilding: null,
-  buildMode: false
-});
+  | { type: "SET_PLAYER_DATA"; payload: PlayerData }
+  | { type: "ADD_BUILDING"; payload: Building }
+  | { type: "REMOVE_BUILDING"; payload: string }
+  | { type: "UPGRADE_BUILDING"; payload: { id: string; level: number } }
+  | { type: "UPDATE_RESOURCES"; payload: ResourceAmount }
+  | { type: "RENAME_ISLAND"; payload: string };
 
 // Reducer
-const gameReducer = (state: GameState, action: GameAction): GameState => {
+const gameReducer = (state: typeof initialState, action: GameAction) => {
   switch (action.type) {
+    case "SET_PLAYER_DATA":
+      return {
+        ...state,
+        player: action.payload
+      };
     case "ADD_BUILDING":
       return {
         ...state,
@@ -48,27 +50,10 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           ...state.player,
           island: {
             ...state.player.island,
-            buildings: [...state.player.island.buildings, action.building]
+            buildings: [...state.player.island.buildings, action.payload]
           }
         }
       };
-
-    case "UPGRADE_BUILDING":
-      return {
-        ...state,
-        player: {
-          ...state.player,
-          island: {
-            ...state.player.island,
-            buildings: state.player.island.buildings.map((building) =>
-              building.id === action.buildingId
-                ? { ...building, level: building.level + 1 }
-                : building
-            )
-          }
-        }
-      };
-
     case "REMOVE_BUILDING":
       return {
         ...state,
@@ -77,12 +62,26 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           island: {
             ...state.player.island,
             buildings: state.player.island.buildings.filter(
-              (building) => building.id !== action.buildingId
+              building => building.id !== action.payload
             )
           }
         }
       };
-
+    case "UPGRADE_BUILDING":
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          island: {
+            ...state.player.island,
+            buildings: state.player.island.buildings.map(building =>
+              building.id === action.payload.id
+                ? { ...building, level: action.payload.level }
+                : building
+            )
+          }
+        }
+      };
     case "UPDATE_RESOURCES":
       return {
         ...state,
@@ -90,15 +89,10 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           ...state.player,
           island: {
             ...state.player.island,
-            resources: {
-              steam: state.player.island.resources.steam + (action.resources.steam || 0),
-              ore: state.player.island.resources.ore + (action.resources.ore || 0),
-              aether: state.player.island.resources.aether + (action.resources.aether || 0)
-            }
+            resources: action.payload
           }
         }
       };
-
     case "RENAME_ISLAND":
       return {
         ...state,
@@ -106,116 +100,263 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           ...state.player,
           island: {
             ...state.player.island,
-            name: action.name
+            name: action.payload
           }
         }
       };
-
     default:
       return state;
   }
 };
 
 // Context
-interface GameContextType {
-  state: GameState;
+type GameContextType = {
+  state: typeof initialState;
   addBuilding: (building: Building) => void;
-  upgradeBuilding: (buildingId: string) => void;
-  removeBuilding: (buildingId: string) => void;
-  updateResources: (resources: Partial<ResourceAmount>) => void;
+  removeBuilding: (id: string) => void;
+  upgradeBuilding: (id: string) => void;
   renameIsland: (name: string) => void;
-  startBuildMode: (buildingType: string) => void;
-  cancelBuildMode: () => void;
   canAfford: (cost: ResourceAmount) => boolean;
-  isBuildingPositionValid: (position: { x: number; y: number }, size: { width: number; height: number }) => boolean;
-}
+  isLoading: boolean;
+};
 
-const GameContext = createContext<GameContextType | undefined>(undefined);
+const GameContext = createContext<GameContextType>({
+  state: initialState,
+  addBuilding: () => {},
+  removeBuilding: () => {},
+  upgradeBuilding: () => {},
+  renameIsland: () => {},
+  canAfford: () => false,
+  isLoading: true,
+});
 
+export const useGame = () => useContext(GameContext);
+
+// Provider
 export const GameProvider = ({ children }: { children: React.ReactNode }) => {
-  const [state, dispatch] = useReducer(gameReducer, createInitialState());
-
-  const addBuilding = (building: Building) => {
-    const buildingInfo = BUILDINGS_CONFIG[building.type];
-    const { cost } = buildingInfo;
+  const [state, dispatch] = useReducer(gameReducer, initialState);
+  const { user, session } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // Fetch initial game data
+  const { isLoading, refetch } = useQuery({
+    queryKey: ["gameData", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      try {
+        // Fetch island data
+        const islandData = await gameService.fetchPlayerIsland();
+        
+        if (!islandData) {
+          throw new Error("No island found for player");
+        }
+        
+        // Fetch buildings
+        const buildings = await gameService.fetchIslandBuildings(islandData.id);
+        
+        // Map to game models
+        const gameData = gameService.mapToGameModels(islandData, buildings);
+        
+        // Create player data
+        const playerData: PlayerData = {
+          id: user.id,
+          name: user.user_metadata.username || "Captain",
+          island: gameData,
+          airships: [],
+          alliance: undefined
+        };
+        
+        // Update state
+        dispatch({ type: "SET_PLAYER_DATA", payload: playerData });
+        
+        return playerData;
+      } catch (error) {
+        console.error("Error fetching game data:", error);
+        toast.error("Failed to load game data");
+        return null;
+      }
+    },
+    enabled: !!user,
+  });
+  
+  // Resource production timer
+  useEffect(() => {
+    if (!state.player.island.id || isLoading) return;
     
-    if (canAfford(cost)) {
-      // Deduct resources
-      dispatch({
-        type: "UPDATE_RESOURCES",
-        resources: {
-          steam: -cost.steam,
-          ore: -cost.ore,
-          aether: -cost.aether
+    const productionInterval = setInterval(() => {
+      const newResources = { ...state.player.island.resources };
+      
+      state.player.island.buildings.forEach(building => {
+        const buildingInfo = BUILDINGS_CONFIG[building.type];
+        if (!buildingInfo.production) return;
+        
+        if (buildingInfo.production.steam) {
+          newResources.steam += buildingInfo.production.steam * building.level;
+        }
+        if (buildingInfo.production.ore) {
+          newResources.ore += buildingInfo.production.ore * building.level;
+        }
+        if (buildingInfo.production.aether) {
+          newResources.aether += buildingInfo.production.aether * building.level;
         }
       });
       
-      // Add building
-      dispatch({ type: "ADD_BUILDING", building });
-    }
-  };
-
-  const upgradeBuilding = (buildingId: string) => {
-    const building = state.player.island.buildings.find(b => b.id === buildingId);
-    if (!building) return;
-    
-    const buildingInfo = BUILDINGS_CONFIG[building.type];
-    const upgradeCost = {
-      steam: buildingInfo.cost.steam * (building.level + 1),
-      ore: buildingInfo.cost.ore * (building.level + 1),
-      aether: buildingInfo.cost.aether * (building.level + 1)
-    };
-    
-    if (canAfford(upgradeCost)) {
-      // Deduct resources
-      dispatch({
-        type: "UPDATE_RESOURCES",
-        resources: {
-          steam: -upgradeCost.steam,
-          ore: -upgradeCost.ore,
-          aether: -upgradeCost.aether
-        }
-      });
+      dispatch({ type: "UPDATE_RESOURCES", payload: newResources });
       
-      // Upgrade building
-      dispatch({ type: "UPGRADE_BUILDING", buildingId });
+      // Save resources to database every minute
+      gameService.updateIslandResources(state.player.island.id, newResources)
+        .catch(error => {
+          console.error("Error saving resources:", error);
+        });
+    }, 10000); // Production tick every 10 seconds
+    
+    return () => clearInterval(productionInterval);
+  }, [state.player.island.id, state.player.island.buildings, isLoading]);
+  
+  // Add building mutation
+  const addBuildingMutation = useMutation({
+    mutationFn: async (building: Building) => {
+      if (!state.player.island.id) throw new Error("No island found");
+      
+      // Subtract resources
+      const buildingInfo = BUILDINGS_CONFIG[building.type];
+      const newResources = { ...state.player.island.resources };
+      newResources.steam -= buildingInfo.cost.steam;
+      newResources.ore -= buildingInfo.cost.ore;
+      newResources.aether -= buildingInfo.cost.aether;
+      
+      // Update resources in state
+      dispatch({ type: "UPDATE_RESOURCES", payload: newResources });
+      
+      // Save building to database
+      const savedBuilding = await gameService.addBuildingToIsland(
+        state.player.island.id,
+        building.type,
+        { x: building.position.x, y: building.position.y }
+      );
+      
+      // Update resources in database
+      await gameService.updateIslandResources(
+        state.player.island.id,
+        newResources
+      );
+      
+      return savedBuilding;
+    },
+    onSuccess: (_, variables) => {
+      // Add building to state
+      dispatch({ type: "ADD_BUILDING", payload: variables });
+    },
+    onError: (error) => {
+      console.error("Error adding building:", error);
+      toast.error("Failed to add building");
+      
+      // Refetch data to ensure consistency
+      refetch();
     }
-  };
-
-  const removeBuilding = (buildingId: string) => {
-    dispatch({ type: "REMOVE_BUILDING", buildingId });
-  };
-
-  const updateResources = (resources: Partial<ResourceAmount>) => {
-    dispatch({ type: "UPDATE_RESOURCES", resources });
-  };
-
-  const renameIsland = (name: string) => {
-    dispatch({ type: "RENAME_ISLAND", name });
-  };
-
-  const startBuildMode = (buildingType: string) => {
-    const buildingInfo = BUILDINGS_CONFIG[buildingType];
-    if (!buildingInfo) return;
-    
-    // Create a temporary building for placement preview
-    const newBuilding: Building = {
-      id: "temp-" + uuidv4(),
-      type: buildingInfo.type,
-      level: 1,
-      position: { x: 0, y: 0 },
-      size: buildingInfo.size
-    };
-    
-    // Update state
-    dispatch({ type: "UPDATE_RESOURCES", resources: {} }); // This is a hack to update state
-  };
-
-  const cancelBuildMode = () => {
-    // Reset build mode
-    dispatch({ type: "UPDATE_RESOURCES", resources: {} }); // This is a hack to update state
-  };
-
+  });
+  
+  // Remove building mutation
+  const removeBuildingMutation = useMutation({
+    mutationFn: async (buildingId: string) => {
+      await gameService.removeIslandBuilding(buildingId);
+      return buildingId;
+    },
+    onSuccess: (buildingId) => {
+      dispatch({ type: "REMOVE_BUILDING", payload: buildingId });
+    },
+    onError: (error) => {
+      console.error("Error removing building:", error);
+      toast.error("Failed to remove building");
+      refetch();
+    }
+  });
+  
+  // Upgrade building mutation
+  const upgradeBuildingMutation = useMutation({
+    mutationFn: async (buildingId: string) => {
+      // Find the building
+      const building = state.player.island.buildings.find(b => b.id === buildingId);
+      if (!building) throw new Error("Building not found");
+      
+      // Get upgrade cost
+      const buildingInfo = BUILDINGS_CONFIG[building.type];
+      const upgradeCost = {
+        steam: buildingInfo.cost.steam * (building.level + 1),
+        ore: buildingInfo.cost.ore * (building.level + 1),
+        aether: buildingInfo.cost.aether * (building.level + 1)
+      };
+      
+      // Check if player can afford the upgrade
+      const resources = state.player.island.resources;
+      if (
+        resources.steam < upgradeCost.steam ||
+        resources.ore < upgradeCost.ore ||
+        resources.aether < upgradeCost.aether
+      ) {
+        throw new Error("Not enough resources");
+      }
+      
+      // Update resources
+      const newResources = { ...resources };
+      newResources.steam -= upgradeCost.steam;
+      newResources.ore -= upgradeCost.ore;
+      newResources.aether -= upgradeCost.aether;
+      
+      // Update resources in state
+      dispatch({ type: "UPDATE_RESOURCES", payload: newResources });
+      
+      // Update building in database
+      await gameService.upgradeIslandBuilding(buildingId, building.level + 1);
+      
+      // Update resources in database
+      if (state.player.island.id) {
+        await gameService.updateIslandResources(
+          state.player.island.id,
+          newResources
+        );
+      }
+      
+      return { id: buildingId, level: building.level + 1 };
+    },
+    onSuccess: (data) => {
+      dispatch({ 
+        type: "UPGRADE_BUILDING", 
+        payload: { id: data.id, level: data.level } 
+      });
+    },
+    onError: (error, buildingId) => {
+      console.error("Error upgrading building:", error);
+      
+      if (error instanceof Error && error.message === "Not enough resources") {
+        toast.error("Not enough resources for upgrade!");
+      } else {
+        toast.error("Failed to upgrade building");
+      }
+      
+      refetch();
+    }
+  });
+  
+  // Rename island mutation
+  const renameIslandMutation = useMutation({
+    mutationFn: async (name: string) => {
+      if (!state.player.island.id) throw new Error("No island found");
+      
+      await gameService.renameIsland(state.player.island.id, name);
+      return name;
+    },
+    onSuccess: (name) => {
+      dispatch({ type: "RENAME_ISLAND", payload: name });
+    },
+    onError: (error) => {
+      console.error("Error renaming island:", error);
+      toast.error("Failed to rename island");
+    }
+  });
+  
+  // Check if player can afford a cost
   const canAfford = (cost: ResourceAmount) => {
     const { resources } = state.player.island;
     return (
@@ -224,93 +365,37 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       resources.aether >= cost.aether
     );
   };
-
-  const isBuildingPositionValid = (position: { x: number; y: number }, size: { width: number; height: number }) => {
-    // Check grid bounds
-    const { width, height } = state.player.island.gridSize;
-    if (
-      position.x < 0 ||
-      position.y < 0 ||
-      position.x + size.width > width ||
-      position.y + size.height > height
-    ) {
-      return false;
-    }
-    
-    // Check for collision with other buildings
-    for (const building of state.player.island.buildings) {
-      if (
-        position.x < building.position.x + building.size.width &&
-        position.x + size.width > building.position.x &&
-        position.y < building.position.y + building.size.height &&
-        position.y + size.height > building.position.y
-      ) {
-        return false;
-      }
-    }
-    
-    return true;
+  
+  // Action handlers
+  const addBuilding = (building: Building) => {
+    addBuildingMutation.mutate(building);
   };
-
-  // Resource production loop
-  useEffect(() => {
-    const produceResources = () => {
-      const production: ResourceAmount = {
-        steam: 0,
-        ore: 0,
-        aether: 0
-      };
-      
-      // Calculate production from buildings
-      state.player.island.buildings.forEach((building) => {
-        const buildingInfo = BUILDINGS_CONFIG[building.type];
-        if (buildingInfo.production) {
-          if (buildingInfo.production.steam) {
-            production.steam += buildingInfo.production.steam * building.level;
-          }
-          if (buildingInfo.production.ore) {
-            production.ore += buildingInfo.production.ore * building.level;
-          }
-          if (buildingInfo.production.aether) {
-            production.aether += buildingInfo.production.aether * building.level;
-          }
-        }
-      });
-      
-      // Update resources
-      if (production.steam > 0 || production.ore > 0 || production.aether > 0) {
-        updateResources(production);
-      }
-    };
-    
-    const interval = setInterval(produceResources, RESOURCE_PRODUCTION_INTERVAL * 1000);
-    return () => clearInterval(interval);
-  }, [state.player.island.buildings]);
-
+  
+  const removeBuilding = (id: string) => {
+    removeBuildingMutation.mutate(id);
+  };
+  
+  const upgradeBuilding = (id: string) => {
+    upgradeBuildingMutation.mutate(id);
+  };
+  
+  const renameIsland = (name: string) => {
+    renameIslandMutation.mutate(name);
+  };
+  
   return (
     <GameContext.Provider
       value={{
         state,
         addBuilding,
-        upgradeBuilding,
         removeBuilding,
-        updateResources,
+        upgradeBuilding,
         renameIsland,
-        startBuildMode,
-        cancelBuildMode,
         canAfford,
-        isBuildingPositionValid
+        isLoading
       }}
     >
       {children}
     </GameContext.Provider>
   );
-};
-
-export const useGame = () => {
-  const context = useContext(GameContext);
-  if (context === undefined) {
-    throw new Error("useGame must be used within a GameProvider");
-  }
-  return context;
 };

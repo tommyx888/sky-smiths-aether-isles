@@ -1,4 +1,6 @@
 
+import { useGame } from "@/context/GameContext";
+import { Loader2 } from "lucide-react";
 import IslandRenderer from "./IslandRenderer";
 import BuildingSelector from "./BuildingSelector";
 import IslandInfo from "./IslandInfo";
@@ -7,6 +9,19 @@ import AirshipViewer from "./AirshipViewer";
 import { Compass } from "lucide-react";
 
 const GameDashboard = () => {
+  const { isLoading } = useGame();
+  
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-6 flex items-center justify-center h-[50vh]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-brass" />
+          <p className="text-muted-foreground">Loading your island...</p>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="container mx-auto py-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
