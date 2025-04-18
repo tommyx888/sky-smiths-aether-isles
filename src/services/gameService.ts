@@ -4,6 +4,7 @@ import { IslandData, Building, Airship, ResourceAmount } from "@/types/game";
 
 export interface PlayerIsland {
   id: string;
+  user_id: string;
   name: string;
   level: number;
   grid_width: number;
@@ -11,6 +12,8 @@ export interface PlayerIsland {
   steam: number;
   ore: number;
   aether: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DatabaseBuilding {
@@ -20,10 +23,12 @@ export interface DatabaseBuilding {
   level: number;
   position_x: number;
   position_y: number;
+  created_at: string;
+  updated_at: string;
 }
 
 // Fetch player's island data
-export const fetchPlayerIsland = async () => {
+export const fetchPlayerIsland = async (): Promise<PlayerIsland> => {
   // Using any type to bypass TypeScript errors with Supabase tables
   const { data: islands, error } = await (supabase as any)
     .from('player_islands')
@@ -40,7 +45,7 @@ export const fetchPlayerIsland = async () => {
 };
 
 // Fetch buildings on player's island
-export const fetchIslandBuildings = async (islandId: string) => {
+export const fetchIslandBuildings = async (islandId: string): Promise<DatabaseBuilding[]> => {
   // Using any type to bypass TypeScript errors with Supabase tables
   const { data, error } = await (supabase as any)
     .from('buildings')
@@ -89,7 +94,7 @@ export const addBuildingToIsland = async (
   islandId: string,
   buildingType: string,
   position: { x: number, y: number }
-) => {
+): Promise<DatabaseBuilding> => {
   // Using any type to bypass TypeScript errors with Supabase tables
   const { data, error } = await (supabase as any)
     .from('buildings')
@@ -108,11 +113,11 @@ export const addBuildingToIsland = async (
     throw error;
   }
   
-  return data;
+  return data as DatabaseBuilding;
 };
 
 // Remove a building
-export const removeIslandBuilding = async (buildingId: string) => {
+export const removeIslandBuilding = async (buildingId: string): Promise<void> => {
   // Using any type to bypass TypeScript errors with Supabase tables
   const { error } = await (supabase as any)
     .from('buildings')
@@ -126,7 +131,7 @@ export const removeIslandBuilding = async (buildingId: string) => {
 };
 
 // Upgrade a building
-export const upgradeIslandBuilding = async (buildingId: string, newLevel: number) => {
+export const upgradeIslandBuilding = async (buildingId: string, newLevel: number): Promise<DatabaseBuilding> => {
   // Using any type to bypass TypeScript errors with Supabase tables
   const { data, error } = await (supabase as any)
     .from('buildings')
@@ -140,14 +145,14 @@ export const upgradeIslandBuilding = async (buildingId: string, newLevel: number
     throw error;
   }
   
-  return data;
+  return data as DatabaseBuilding;
 };
 
 // Update island resources
 export const updateIslandResources = async (
   islandId: string, 
   resources: ResourceAmount
-) => {
+): Promise<PlayerIsland> => {
   // Using any type to bypass TypeScript errors with Supabase tables
   const { data, error } = await (supabase as any)
     .from('player_islands')
@@ -165,11 +170,11 @@ export const updateIslandResources = async (
     throw error;
   }
   
-  return data;
+  return data as PlayerIsland;
 };
 
 // Rename island
-export const renameIsland = async (islandId: string, name: string) => {
+export const renameIsland = async (islandId: string, name: string): Promise<PlayerIsland> => {
   // Using any type to bypass TypeScript errors with Supabase tables
   const { data, error } = await (supabase as any)
     .from('player_islands')
@@ -183,5 +188,5 @@ export const renameIsland = async (islandId: string, name: string) => {
     throw error;
   }
   
-  return data;
+  return data as PlayerIsland;
 };

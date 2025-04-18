@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useReducer, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -8,7 +7,6 @@ import { PlayerData, IslandData, Building, BuildingType, ResourceAmount } from "
 import { BUILDINGS_CONFIG } from "@/config/gameConfig";
 import * as gameService from "@/services/gameService";
 
-// Initial state
 const initialState: { player: PlayerData } = {
   player: {
     id: "",
@@ -26,7 +24,6 @@ const initialState: { player: PlayerData } = {
   }
 };
 
-// Action types
 type GameAction =
   | { type: "SET_PLAYER_DATA"; payload: PlayerData }
   | { type: "ADD_BUILDING"; payload: Building }
@@ -35,7 +32,6 @@ type GameAction =
   | { type: "UPDATE_RESOURCES"; payload: ResourceAmount }
   | { type: "RENAME_ISLAND"; payload: string };
 
-// Reducer
 const gameReducer = (state: typeof initialState, action: GameAction) => {
   switch (action.type) {
     case "SET_PLAYER_DATA":
@@ -109,7 +105,6 @@ const gameReducer = (state: typeof initialState, action: GameAction) => {
   }
 };
 
-// Context
 type GameContextType = {
   state: typeof initialState;
   addBuilding: (building: Building) => void;
@@ -132,33 +127,27 @@ const GameContext = createContext<GameContextType>({
 
 export const useGame = () => useContext(GameContext);
 
-// Provider
 export const GameProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const { user, session } = useAuth();
   const queryClient = useQueryClient();
   
-  // Fetch initial game data
   const { isLoading, refetch } = useQuery({
     queryKey: ["gameData", user?.id],
     queryFn: async () => {
       if (!user) return null;
       
       try {
-        // Fetch island data
         const islandData = await gameService.fetchPlayerIsland();
         
         if (!islandData) {
           throw new Error("No island found for player");
         }
         
-        // Fetch buildings
         const buildings = await gameService.fetchIslandBuildings(islandData.id);
         
-        // Map to game models
         const gameData = gameService.mapToGameModels(islandData, buildings);
         
-        // Create player data
         const playerData: PlayerData = {
           id: user.id,
           name: user.user_metadata?.username || "Captain",
@@ -167,7 +156,6 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
           alliance: undefined
         };
         
-        // Update state
         dispatch({ type: "SET_PLAYER_DATA", payload: playerData });
         
         return playerData;
@@ -180,7 +168,6 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     enabled: !!user,
   });
   
-  // Resource production timer
   useEffect(() => {
     if (!state.player.island.id || isLoading) return;
     
@@ -204,39 +191,33 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       
       dispatch({ type: "UPDATE_RESOURCES", payload: newResources });
       
-      // Save resources to database every minute
       gameService.updateIslandResources(state.player.island.id, newResources)
         .catch(error => {
           console.error("Error saving resources:", error);
         });
-    }, 10000); // Production tick every 10 seconds
+    }, 10000);
     
     return () => clearInterval(productionInterval);
   }, [state.player.island.id, state.player.island.buildings, isLoading]);
   
-  // Add building mutation
   const addBuildingMutation = useMutation({
     mutationFn: async (building: Building) => {
       if (!state.player.island.id) throw new Error("No island found");
       
-      // Subtract resources
       const buildingInfo = BUILDINGS_CONFIG[building.type];
       const newResources = { ...state.player.island.resources };
       newResources.steam -= buildingInfo.cost.steam;
       newResources.ore -= buildingInfo.cost.ore;
       newResources.aether -= buildingInfo.cost.aether;
       
-      // Update resources in state
       dispatch({ type: "UPDATE_RESOURCES", payload: newResources });
       
-      // Save building to database
       const savedBuilding = await gameService.addBuildingToIsland(
         state.player.island.id,
         building.type,
         { x: building.position.x, y: building.position.y }
       );
       
-      // Update resources in database
       await gameService.updateIslandResources(
         state.player.island.id,
         newResources
@@ -245,19 +226,16 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
       return savedBuilding;
     },
     onSuccess: (_, variables) => {
-      // Add building to state
       dispatch({ type: "ADD_BUILDING", payload: variables });
     },
     onError: (error) => {
       console.error("Error adding building:", error);
       toast.error("Failed to add building");
       
-      // Refetch data to ensure consistency
       refetch();
     }
   });
   
-  // Remove building mutation
   const removeBuildingMutation = useMutation({
     mutationFn: async (buildingId: string) => {
       await gameService.removeIslandBuilding(buildingId);
@@ -273,14 +251,11 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   });
   
-  // Upgrade building mutation
   const upgradeBuildingMutation = useMutation({
     mutationFn: async (buildingId: string) => {
-      // Find the building
       const building = state.player.island.buildings.find(b => b.id === buildingId);
       if (!building) throw new Error("Building not found");
       
-      // Get upgrade cost
       const buildingInfo = BUILDINGS_CONFIG[building.type];
       const upgradeCost = {
         steam: buildingInfo.cost.steam * (building.level + 1),
@@ -288,7 +263,6 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         aether: buildingInfo.cost.aether * (building.level + 1)
       };
       
-      // Check if player can afford the upgrade
       const resources = state.player.island.resources;
       if (
         resources.steam < upgradeCost.steam ||
@@ -298,19 +272,15 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error("Not enough resources");
       }
       
-      // Update resources
       const newResources = { ...resources };
       newResources.steam -= upgradeCost.steam;
       newResources.ore -= upgradeCost.ore;
       newResources.aether -= upgradeCost.aether;
       
-      // Update resources in state
       dispatch({ type: "UPDATE_RESOURCES", payload: newResources });
       
-      // Update building in database
       await gameService.upgradeIslandBuilding(buildingId, building.level + 1);
       
-      // Update resources in database
       if (state.player.island.id) {
         await gameService.updateIslandResources(
           state.player.island.id,
@@ -339,7 +309,6 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   });
   
-  // Rename island mutation
   const renameIslandMutation = useMutation({
     mutationFn: async (name: string) => {
       if (!state.player.island.id) throw new Error("No island found");
@@ -356,7 +325,6 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     }
   });
   
-  // Check if player can afford a cost
   const canAfford = (cost: ResourceAmount) => {
     const { resources } = state.player.island;
     return (
@@ -366,7 +334,6 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
     );
   };
   
-  // Action handlers
   const addBuilding = (building: Building) => {
     addBuildingMutation.mutate(building);
   };

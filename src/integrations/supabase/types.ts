@@ -9,6 +9,47 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      buildings: {
+        Row: {
+          created_at: string
+          id: string
+          island_id: string
+          level: number
+          position_x: number
+          position_y: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          island_id: string
+          level?: number
+          position_x: number
+          position_y: number
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          island_id?: string
+          level?: number
+          position_x?: number
+          position_y?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buildings_island_id_fkey"
+            columns: ["island_id"]
+            isOneToOne: false
+            referencedRelation: "player_islands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       countries: {
         Row: {
           accommodation: string | null
@@ -423,6 +464,48 @@ export type Database = {
           salary_currency?: string | null
           salary_max?: number | null
           salary_min?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      player_islands: {
+        Row: {
+          aether: number
+          created_at: string
+          grid_height: number
+          grid_width: number
+          id: string
+          level: number
+          name: string
+          ore: number
+          steam: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aether?: number
+          created_at?: string
+          grid_height?: number
+          grid_width?: number
+          id?: string
+          level?: number
+          name?: string
+          ore?: number
+          steam?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aether?: number
+          created_at?: string
+          grid_height?: number
+          grid_width?: number
+          id?: string
+          level?: number
+          name?: string
+          ore?: number
+          steam?: number
           updated_at?: string
           user_id?: string
         }
