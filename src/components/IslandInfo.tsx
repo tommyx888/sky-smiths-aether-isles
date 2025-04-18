@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useGame } from "@/context/GameContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Island, Home } from "lucide-react";
+import { Map, Home } from "lucide-react"; // Changed from Island to Map
 
 const IslandInfo = () => {
   const { state, renameIsland } = useGame();
@@ -20,7 +20,7 @@ const IslandInfo = () => {
     <div className="steampunk-panel">
       <div className="flex items-center justify-between">
         <div className="flex items-center">
-          <Island className="h-6 w-6 mr-2 text-copper" />
+          <Map className="h-6 w-6 mr-2 text-copper" /> {/* Updated */}
           {isEditing ? (
             <form onSubmit={handleSubmit} className="flex gap-2">
               <Input

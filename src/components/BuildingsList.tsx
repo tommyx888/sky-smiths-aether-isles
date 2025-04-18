@@ -1,4 +1,3 @@
-
 import { useGame } from "@/context/GameContext";
 import { Building } from "@/types/game";
 import { BUILDINGS_CONFIG } from "@/config/gameConfig";
@@ -6,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Droplets,
   Pickaxe,
-  Flask,
+  FlaskConical,
   Wrench,
   Users,
   Shield,
@@ -27,7 +26,7 @@ const BuildingsList = () => {
       case "ore_mine":
         return <Pickaxe className="h-4 w-4" />;
       case "aether_collector":
-        return <Flask className="h-4 w-4" />;
+        return <FlaskConical className="h-4 w-4" />;
       case "workshop":
         return <Wrench className="h-4 w-4" />;
       case "barracks":
@@ -94,7 +93,7 @@ const BuildingsList = () => {
     if (buildingInfo.production.aether) {
       elements.push(
         <div key="aether" className="flex items-center text-xs">
-          <Flask className="h-3 w-3 mr-1 text-aether" />
+          <FlaskConical className="h-3 w-3 mr-1 text-aether" />
           +{buildingInfo.production.aether * building.level}/tick
         </div>
       );

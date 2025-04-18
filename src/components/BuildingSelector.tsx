@@ -1,16 +1,15 @@
-
 import { useState } from "react";
 import { useGame } from "@/context/GameContext";
+import { BuildingType, Building } from "@/types/game";
 import { BUILDINGS_CONFIG } from "@/config/gameConfig";
 import { Button } from "@/components/ui/button";
-import { BuildingType, Building } from "@/types/game";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import {
-  ToolIcon,
+  Tool,
   Droplets,
   Pickaxe,
-  Flask,
+  FlaskConical,
   Wrench,
   Users,
   Shield,
@@ -29,7 +28,7 @@ const BuildingSelector = () => {
       case "ore_mine":
         return <Pickaxe className="h-4 w-4" />;
       case "aether_collector":
-        return <Flask className="h-4 w-4" />;
+        return <FlaskConical className="h-4 w-4" />;
       case "workshop":
         return <Wrench className="h-4 w-4" />;
       case "barracks":
@@ -39,7 +38,7 @@ const BuildingSelector = () => {
       case "sky_dock":
         return <Anchor className="h-4 w-4" />;
       default:
-        return <ToolIcon className="h-4 w-4" />;
+        return <Tool className="h-4 w-4" />;
     }
   };
   
@@ -53,13 +52,11 @@ const BuildingSelector = () => {
     const buildingConfig = BUILDINGS_CONFIG[selectedType];
     if (!buildingConfig) return;
     
-    // Check resources
     if (!canAfford(buildingConfig.cost)) {
       toast.error("Not enough resources!");
       return;
     }
     
-    // Check grid size
     const { gridSize } = state.player.island;
     if (
       position.x < 0 ||
@@ -71,7 +68,6 @@ const BuildingSelector = () => {
       return;
     }
     
-    // Check for collisions with other buildings
     const isColliding = state.player.island.buildings.some((building) => {
       return (
         position.x < building.position.x + building.size.width &&
@@ -86,7 +82,6 @@ const BuildingSelector = () => {
       return;
     }
     
-    // Create building
     const newBuilding: Building = {
       id: uuidv4(),
       type: selectedType,
@@ -103,7 +98,7 @@ const BuildingSelector = () => {
   return (
     <div className="steampunk-panel">
       <h2 className="text-xl font-bold mb-4 text-brass-dark flex items-center">
-        <ToolIcon className="mr-2 h-6 w-6 gear-icon" />
+        <Tool className="mr-2 h-6 w-6 gear-icon" />
         Building Construction
       </h2>
       
@@ -131,7 +126,7 @@ const BuildingSelector = () => {
                 {building.cost.ore}
               </span>
               <span className="flex items-center">
-                <Flask className="h-3 w-3 mr-1 text-aether" />
+                <FlaskConical className="h-3 w-3 mr-1 text-aether" />
                 {building.cost.aether}
               </span>
             </div>

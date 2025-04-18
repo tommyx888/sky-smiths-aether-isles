@@ -1,5 +1,5 @@
 
-import { Droplets, Pickaxe, Flask } from "lucide-react";
+import { Droplets, Pickaxe, FlaskConical } from "lucide-react"; // Changed from Flask to FlaskConical
 import { useGame } from "@/context/GameContext";
 
 const ResourceDisplay = () => {
@@ -21,7 +21,7 @@ const ResourceDisplay = () => {
       </div>
       
       <div className="resource-counter">
-        <Flask className="h-4 w-4 text-aether" />
+        <FlaskConical className="h-4 w-4 text-aether" /> {/* Updated */}
         <span>{Math.floor(resources.aether)}</span>
         <span className="text-muted-foreground">Aether</span>
       </div>
