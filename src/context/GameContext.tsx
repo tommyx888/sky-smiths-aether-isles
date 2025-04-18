@@ -161,7 +161,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         // Create player data
         const playerData: PlayerData = {
           id: user.id,
-          name: user.user_metadata.username || "Captain",
+          name: user.user_metadata?.username || "Captain",
           island: gameData,
           airships: [],
           alliance: undefined

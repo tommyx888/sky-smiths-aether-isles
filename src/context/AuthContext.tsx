@@ -67,7 +67,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       toast.success("Account created! Please check your email for verification.");
-      return data;
     } catch (error) {
       console.error("Error signing up:", error);
       throw error;
@@ -87,7 +86,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       toast.success("Logged in successfully!");
-      return data;
     } catch (error) {
       console.error("Error signing in:", error);
       throw error;
