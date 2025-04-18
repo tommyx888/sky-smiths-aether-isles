@@ -12,24 +12,24 @@ const Header = () => {
   };
   
   return (
-    <header className="border-b border-border/40 bg-header/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="border-b border-border/40 bg-glass-gradient backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Compass className="h-6 w-6 text-brass gear-icon" />
-          <span className="text-xl font-bold text-brass">SkyPort Haven</span>
+        <div className="flex items-center gap-4">
+          <Compass className="h-6 w-6 text-primary animate-subtle-pulse" />
+          <span className="text-xl font-bold text-gradient">SkyPort Haven</span>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           <ResourceDisplay />
           
           {user && (
             <Button 
               variant="ghost" 
               size="sm" 
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 hover-scale"
               onClick={handleLogout}
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4 w-4 text-destructive" />
               <span className="hidden sm:inline">Log out</span>
             </Button>
           )}

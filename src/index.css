@@ -14,90 +14,86 @@
     --popover: 36 45% 97%;
     --popover-foreground: 25 10% 25%;
 
-    --primary: 32 59% 59%;
-    --primary-foreground: 36 100% 97%;
+    --primary: 220 59% 59%;
+    --primary-foreground: 220 100% 97%;
 
-    --secondary: 30 24% 51%;
-    --secondary-foreground: 36 100% 97%;
+    --secondary: 240 24% 51%;
+    --secondary-foreground: 240 100% 97%;
 
-    --muted: 36 25% 90%;
-    --muted-foreground: 24 5% 45%;
+    --muted: 240 25% 90%;
+    --muted-foreground: 240 5% 45%;
 
-    --accent: 29 70% 72%;
-    --accent-foreground: 24 10% 25%;
+    --accent: 280 70% 72%;
+    --accent-foreground: 280 10% 25%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 36 100% 97%;
+    --destructive-foreground: 0 100% 97%;
 
-    --border: 30 30% 80%;
-    --input: 30 30% 80%;
-    --ring: 32 59% 59%;
+    --border: 240 30% 80%;
+    --input: 240 30% 80%;
+    --ring: 220 59% 59%;
 
-    --radius: 0.5rem;
-
-    --sidebar-background: 36 45% 97%;
-    --sidebar-foreground: 25 10% 25%;
-    --sidebar-primary: 32 59% 59%;
-    --sidebar-primary-foreground: 36 100% 97%;
-    --sidebar-accent: 29 70% 72%;
-    --sidebar-accent-foreground: 24 10% 25%;
-    --sidebar-border: 30 30% 80%;
-    --sidebar-ring: 32 59% 59%;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 25 30% 15%;
-    --foreground: 36 20% 85%;
+    --background: 240 30% 15%;
+    --foreground: 240 20% 85%;
 
-    --card: 25 25% 20%;
-    --card-foreground: 36 20% 85%;
+    --card: 240 25% 20%;
+    --card-foreground: 240 20% 85%;
 
-    --popover: 25 25% 20%;
-    --popover-foreground: 36 20% 85%;
+    --popover: 240 25% 20%;
+    --popover-foreground: 240 20% 85%;
 
-    --primary: 32 50% 50%;
-    --primary-foreground: 36 20% 95%;
+    --primary: 220 50% 50%;
+    --primary-foreground: 220 20% 95%;
 
-    --secondary: 30 30% 40%;
-    --secondary-foreground: 36 20% 95%;
+    --secondary: 240 30% 40%;
+    --secondary-foreground: 240 20% 95%;
 
-    --muted: 25 20% 30%;
-    --muted-foreground: 36 10% 70%;
+    --muted: 240 20% 30%;
+    --muted-foreground: 240 10% 70%;
 
-    --accent: 29 50% 45%;
-    --accent-foreground: 36 20% 95%;
+    --accent: 280 50% 45%;
+    --accent-foreground: 280 20% 95%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 36 20% 95%;
+    --destructive-foreground: 0 20% 95%;
 
-    --border: 25 30% 30%;
-    --input: 25 30% 30%;
-    --ring: 32 50% 50%;
-
-    --sidebar-background: 25 25% 20%;
-    --sidebar-foreground: 36 20% 85%;
-    --sidebar-primary: 32 50% 50%;
-    --sidebar-primary-foreground: 36 20% 95%;
-    --sidebar-accent: 29 50% 45%;
-    --sidebar-accent-foreground: 36 20% 95%;
-    --sidebar-border: 25 30% 30%;
-    --sidebar-ring: 32 50% 50%;
+    --border: 240 30% 30%;
+    --input: 240 30% 30%;
+    --ring: 220 50% 50%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 }
 
 @layer components {
+  .glass-panel {
+    @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl;
+  }
+
+  .gradient-border {
+    @apply relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-primary/30 before:to-accent/30 before:rounded-[inherit] before:-z-10;
+  }
+
+  .hover-scale {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-lg;
+  }
+
   .steampunk-panel {
-    @apply bg-card border-2 border-brass rounded-lg shadow-md p-4 relative;
+    @apply bg-card border-2 border-brass rounded-lg shadow-md p-4 relative 
+           gradient-border hover-scale;
     background-image: repeating-linear-gradient(
       45deg,
       transparent,
@@ -106,53 +102,10 @@
       rgba(214, 167, 87, 0.05) 20px
     );
   }
+}
 
-  .steampunk-panel::before {
-    content: '';
-    @apply absolute rounded-lg;
-    top: -1px;
-    left: -1px;
-    right: -1px;
-    bottom: -1px;
-    background: linear-gradient(45deg, rgba(214, 167, 87, 0.7), transparent 40%, transparent 60%, rgba(214, 167, 87, 0.7));
-    z-index: -1;
-    pointer-events: none;
-  }
-
-  .gear-icon {
-    @apply text-brass-dark animate-spin-slow;
-  }
-
-  .steampunk-button {
-    @apply bg-brass text-primary-foreground border-2 border-brass-dark rounded-md px-4 py-2 
-           shadow-md hover:bg-brass-dark transition-all duration-300
-           flex items-center justify-center gap-2;
-  }
-
-  .steampunk-button::before {
-    content: '';
-    @apply absolute rounded-md;
-    top: -1px;
-    left: -1px;
-    right: -1px;
-    bottom: -1px;
-    background: linear-gradient(45deg, rgba(214, 167, 87, 0.7), transparent 40%, transparent 60%, rgba(214, 167, 87, 0.7));
-    z-index: -1;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .steampunk-button:hover::before {
-    opacity: 1;
-  }
-
-  .resource-counter {
-    @apply flex items-center gap-2 px-3 py-2 bg-card/80 text-sm font-medium rounded-md border border-brass/50;
-  }
-
-  .building-grid-cell {
-    @apply border border-dashed border-brass/40 bg-transparent hover:bg-brass/20 transition-colors;
-    aspect-ratio: 1;
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-br from-primary via-primary/80 to-accent bg-clip-text text-transparent;
   }
 }
