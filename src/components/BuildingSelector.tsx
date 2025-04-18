@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useGame } from "@/context/GameContext";
 import { BuildingType, Building } from "@/types/game";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import {
-  Tool,
+  Hammer,
   Droplets,
   Pickaxe,
   FlaskConical,
@@ -38,7 +39,7 @@ const BuildingSelector = () => {
       case "sky_dock":
         return <Anchor className="h-4 w-4" />;
       default:
-        return <Tool className="h-4 w-4" />;
+        return <Hammer className="h-4 w-4" />;
     }
   };
   
@@ -98,7 +99,7 @@ const BuildingSelector = () => {
   return (
     <div className="steampunk-panel">
       <h2 className="text-xl font-bold mb-4 text-brass-dark flex items-center">
-        <Tool className="mr-2 h-6 w-6 gear-icon" />
+        <Hammer className="mr-2 h-6 w-6 gear-icon" />
         Building Construction
       </h2>
       
