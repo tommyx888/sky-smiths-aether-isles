@@ -29,10 +29,18 @@ export interface DatabaseBuilding {
 
 // Fetch player's island data or create one if it doesn't exist
 export const fetchPlayerIsland = async (): Promise<PlayerIsland> => {
+  // Get the current user
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error("No authenticated user found");
+  }
+
   // Using any type to bypass TypeScript errors with Supabase tables
   const { data: islands, error } = await (supabase as any)
     .from('player_islands')
     .select('*')
+    .eq('user_id', user.id)
     .limit(1);
     
   if (error) {
@@ -42,7 +50,7 @@ export const fetchPlayerIsland = async (): Promise<PlayerIsland> => {
 
   // If no island exists, create one
   if (!islands || islands.length === 0) {
-    const newIsland = await createPlayerIsland();
+    const newIsland = await createPlayerIsland(user.id);
     return newIsland;
   }
   
@@ -50,11 +58,12 @@ export const fetchPlayerIsland = async (): Promise<PlayerIsland> => {
 };
 
 // Create a new island for the player
-export const createPlayerIsland = async (): Promise<PlayerIsland> => {
+export const createPlayerIsland = async (userId: string): Promise<PlayerIsland> => {
   // Using any type to bypass TypeScript errors with Supabase tables
   const { data: island, error } = await (supabase as any)
     .from('player_islands')
     .insert({
+      user_id: userId,
       name: 'Sky Haven',
       level: 1,
       grid_width: 10,
