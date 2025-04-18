@@ -141,7 +141,7 @@ export const GameProvider = ({ children }: { children: React.ReactNode }) => {
         const islandData = await gameService.fetchPlayerIsland();
         
         if (!islandData) {
-          throw new Error("No island found for player");
+          throw new Error("Failed to get or create island");
         }
         
         const buildings = await gameService.fetchIslandBuildings(islandData.id);

@@ -27,21 +27,55 @@ export interface DatabaseBuilding {
   updated_at: string;
 }
 
-// Fetch player's island data
+// Fetch player's island data or create one if it doesn't exist
 export const fetchPlayerIsland = async (): Promise<PlayerIsland> => {
   // Using any type to bypass TypeScript errors with Supabase tables
   const { data: islands, error } = await (supabase as any)
     .from('player_islands')
     .select('*')
-    .limit(1)
+    .limit(1);
+    
+  if (error) {
+    console.error("Error fetching islands:", error);
+    throw error;
+  }
+
+  // If no island exists, create one
+  if (!islands || islands.length === 0) {
+    const { data: newIsland, error: createError } = await createPlayerIsland();
+    if (createError) {
+      console.error("Error creating island:", createError);
+      throw createError;
+    }
+    return newIsland as PlayerIsland;
+  }
+  
+  return islands[0] as PlayerIsland;
+};
+
+// Create a new island for the player
+export const createPlayerIsland = async (): Promise<PlayerIsland> => {
+  // Using any type to bypass TypeScript errors with Supabase tables
+  const { data: island, error } = await (supabase as any)
+    .from('player_islands')
+    .insert({
+      name: 'Sky Haven',
+      level: 1,
+      grid_width: 10,
+      grid_height: 10,
+      steam: 100,
+      ore: 50,
+      aether: 25
+    })
+    .select()
     .single();
     
   if (error) {
-    console.error("Error fetching island:", error);
+    console.error("Error creating island:", error);
     throw error;
   }
   
-  return islands as PlayerIsland;
+  return island as PlayerIsland;
 };
 
 // Fetch buildings on player's island
@@ -57,7 +91,7 @@ export const fetchIslandBuildings = async (islandId: string): Promise<DatabaseBu
     throw error;
   }
   
-  return data as DatabaseBuilding[];
+  return (data || []) as DatabaseBuilding[];
 };
 
 // Convert database models to game models
@@ -93,7 +127,7 @@ export const mapToGameModels = (
 export const addBuildingToIsland = async (
   islandId: string,
   buildingType: string,
-  position: { x: number, y: number }
+  position: { x: number; y: number }
 ): Promise<DatabaseBuilding> => {
   // Using any type to bypass TypeScript errors with Supabase tables
   const { data, error } = await (supabase as any)
