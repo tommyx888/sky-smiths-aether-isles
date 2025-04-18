@@ -6,7 +6,8 @@ import BuildingSelector from "./BuildingSelector";
 import IslandInfo from "./IslandInfo";
 import BuildingsList from "./BuildingsList";
 import AirshipViewer from "./AirshipViewer";
-import { Compass } from "lucide-react";
+import { Compass, Info } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const GameDashboard = () => {
   const { isLoading } = useGame();
@@ -16,7 +17,7 @@ const GameDashboard = () => {
       <div className="container mx-auto py-6 flex items-center justify-center h-[50vh]">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-12 w-12 animate-spin text-brass" />
-          <p className="text-muted-foreground">Loading your island...</p>
+          <p className="text-muted-foreground">Loading your islands...</p>
         </div>
       </div>
     );
@@ -28,6 +29,16 @@ const GameDashboard = () => {
         {/* Left column */}
         <div className="space-y-6">
           <IslandInfo />
+          
+          <Alert className="bg-sky-light border-brass">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Floating Islands Network</AlertTitle>
+            <AlertDescription>
+              Your sky empire consists of multiple floating islands. Each building is constructed on its own island, 
+              connected by sky bridges. New islands can only be built adjacent to existing ones.
+            </AlertDescription>
+          </Alert>
+          
           <BuildingsList />
         </div>
         

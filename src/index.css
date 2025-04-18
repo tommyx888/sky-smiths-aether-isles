@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -91,8 +92,8 @@
   }
 
   .steampunk-panel {
-    @apply bg-card border-2 border-brass rounded-lg shadow-md p-4 relative 
-           gradient-border hover-scale;
+    @apply border-2 border-brass rounded-lg shadow-md p-4 relative 
+           gradient-border hover-scale bg-[hsl(var(--card))] backdrop-blur-sm;
     background-image: repeating-linear-gradient(
       45deg,
       transparent,
@@ -101,10 +102,36 @@
       rgba(214, 167, 87, 0.05) 20px
     );
   }
+  
+  .building-grid-cell {
+    @apply w-full aspect-square border border-gray-300/30 hover:border-brass transition-colors;
+  }
 }
 
 @layer utilities {
   .text-gradient {
     @apply bg-gradient-to-br from-primary via-primary/80 to-accent bg-clip-text text-transparent;
+  }
+  
+  .sky-island-shadow {
+    @apply after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 
+           after:w-[120%] after:h-3 after:bg-black/10 after:blur-md after:rounded-full;
+  }
+  
+  .bridge-connection {
+    @apply relative overflow-visible;
+  }
+  
+  .bridge-connection::before, 
+  .bridge-connection::after {
+    @apply content-[''] absolute w-1 h-1 bg-brass rounded-full top-1/2 -translate-y-1/2;
+  }
+  
+  .bridge-connection::before {
+    @apply left-0;
+  }
+  
+  .bridge-connection::after {
+    @apply right-0;
   }
 }

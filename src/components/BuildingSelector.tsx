@@ -47,6 +47,36 @@ const BuildingSelector = () => {
     setPosition({ x, y });
   };
   
+  // Check if a cell is adjacent to any existing building
+  const isAdjacentToExistingBuilding = (x: number, y: number): boolean => {
+    // If this is the first building, allow placement at the center
+    if (state.player.island.buildings.length === 0) {
+      return x === 5 && y === 5;
+    }
+    
+    // Find one adjacent existing building
+    return state.player.island.buildings.some(building => {
+      const dx = Math.abs(building.position.x - x);
+      const dy = Math.abs(building.position.y - y);
+      
+      // Adjacent means sharing an edge, not diagonally
+      return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+    });
+  };
+  
+  // Determine if a cell can be built on (is adjacent to existing building and not occupied)
+  const canBuildOnCell = (x: number, y: number): boolean => {
+    // Check if cell is occupied
+    const isOccupied = state.player.island.buildings.some(
+      building => building.position.x === x && building.position.y === y
+    );
+    
+    if (isOccupied) return false;
+    
+    // Check if adjacent to existing building
+    return isAdjacentToExistingBuilding(x, y);
+  };
+  
   const handleBuild = () => {
     if (!selectedType) return;
     
@@ -66,6 +96,11 @@ const BuildingSelector = () => {
       position.y + buildingConfig.size.height > gridSize.height
     ) {
       toast.error("Building is outside the island!");
+      return;
+    }
+    
+    if (!isAdjacentToExistingBuilding(position.x, position.y)) {
+      toast.error("New buildings must be placed adjacent to existing buildings!");
       return;
     }
     
@@ -141,19 +176,24 @@ const BuildingSelector = () => {
             {Array.from({ length: 100 }).map((_, index) => {
               const x = index % 10;
               const y = Math.floor(index / 10);
+              
               const isSelected =
                 x >= position.x &&
                 x < position.x + (BUILDINGS_CONFIG[selectedType]?.size.width || 1) &&
                 y >= position.y &&
                 y < position.y + (BUILDINGS_CONFIG[selectedType]?.size.height || 1);
               
+              const canBuild = canBuildOnCell(x, y);
+              
               return (
                 <div
                   key={index}
                   className={`building-grid-cell cursor-pointer ${
                     isSelected ? "bg-brass/40 border-brass" : ""
+                  } ${
+                    canBuild ? "bg-green-100/20" : "bg-red-300/10 opacity-50"
                   }`}
-                  onClick={() => handlePositionChange(x, y)}
+                  onClick={() => canBuild && handlePositionChange(x, y)}
                 />
               );
             })}
