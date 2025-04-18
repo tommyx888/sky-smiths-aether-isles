@@ -11,9 +11,16 @@ import {
   Shield,
   Anchor,
   ArrowUpCircle,
-  Trash2
+  Trash2,
+  Info
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const BuildingsList = () => {
   const { state, removeBuilding, upgradeBuilding } = useGame();
@@ -40,13 +47,17 @@ const BuildingsList = () => {
     }
   };
   
-  const handleUpgrade = (building: Building) => {
+  const getUpgradeCost = (building: Building) => {
     const buildingInfo = BUILDINGS_CONFIG[building.type];
-    const upgradeCost = {
+    return {
       steam: buildingInfo.cost.steam * (building.level + 1),
       ore: buildingInfo.cost.ore * (building.level + 1),
       aether: buildingInfo.cost.aether * (building.level + 1)
     };
+  };
+  
+  const handleUpgrade = (building: Building) => {
+    const upgradeCost = getUpgradeCost(building);
     
     if (
       state.player.island.resources.steam >= upgradeCost.steam &&
@@ -54,6 +65,7 @@ const BuildingsList = () => {
       state.player.island.resources.aether >= upgradeCost.aether
     ) {
       upgradeBuilding(building.id);
+      const buildingInfo = BUILDINGS_CONFIG[building.type];
       toast.success(`${buildingInfo.name} upgraded to level ${building.level + 1}!`);
     } else {
       toast.error("Not enough resources for upgrade!");
@@ -70,6 +82,12 @@ const BuildingsList = () => {
     const buildingInfo = BUILDINGS_CONFIG[building.type];
     if (!buildingInfo.production) return null;
     
+    const nextLevelProduction = {
+      steam: buildingInfo.production.steam ? buildingInfo.production.steam * (building.level + 1) : 0,
+      ore: buildingInfo.production.ore ? buildingInfo.production.ore * (building.level + 1) : 0,
+      aether: buildingInfo.production.aether ? buildingInfo.production.aether * (building.level + 1) : 0
+    };
+    
     const elements = [];
     
     if (buildingInfo.production.steam) {
@@ -77,6 +95,7 @@ const BuildingsList = () => {
         <div key="steam" className="flex items-center text-xs">
           <Droplets className="h-3 w-3 mr-1 text-sky" />
           +{buildingInfo.production.steam * building.level}/tick
+          <span className="text-emerald-500 ml-1">(+{nextLevelProduction.steam - (buildingInfo.production.steam * building.level)})</span>
         </div>
       );
     }
@@ -86,6 +105,7 @@ const BuildingsList = () => {
         <div key="ore" className="flex items-center text-xs">
           <Pickaxe className="h-3 w-3 mr-1 text-copper" />
           +{buildingInfo.production.ore * building.level}/tick
+          <span className="text-emerald-500 ml-1">(+{nextLevelProduction.ore - (buildingInfo.production.ore * building.level)})</span>
         </div>
       );
     }
@@ -95,6 +115,7 @@ const BuildingsList = () => {
         <div key="aether" className="flex items-center text-xs">
           <FlaskConical className="h-3 w-3 mr-1 text-aether" />
           +{buildingInfo.production.aether * building.level}/tick
+          <span className="text-emerald-500 ml-1">(+{nextLevelProduction.aether - (buildingInfo.production.aether * building.level)})</span>
         </div>
       );
     }
@@ -114,6 +135,8 @@ const BuildingsList = () => {
         <div className="space-y-3">
           {buildings.map((building) => {
             const buildingInfo = BUILDINGS_CONFIG[building.type];
+            const upgradeCost = getUpgradeCost(building);
+            
             return (
               <div
                 key={building.id}
@@ -133,14 +156,44 @@ const BuildingsList = () => {
                   </div>
                   
                   <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 w-7 p-0"
-                      onClick={() => handleUpgrade(building)}
-                    >
-                      <ArrowUpCircle className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 w-7 p-0"
+                            onClick={() => handleUpgrade(building)}
+                          >
+                            <ArrowUpCircle className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Upgrade Cost:</p>
+                          <div className="flex gap-2 mt-1">
+                            {upgradeCost.steam > 0 && (
+                              <span className="flex items-center">
+                                <Droplets className="h-3 w-3 mr-1 text-sky" />
+                                {upgradeCost.steam}
+                              </span>
+                            )}
+                            {upgradeCost.ore > 0 && (
+                              <span className="flex items-center">
+                                <Pickaxe className="h-3 w-3 mr-1 text-copper" />
+                                {upgradeCost.ore}
+                              </span>
+                            )}
+                            {upgradeCost.aether > 0 && (
+                              <span className="flex items-center">
+                                <FlaskConical className="h-3 w-3 mr-1 text-aether" />
+                                {upgradeCost.aether}
+                              </span>
+                            )}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
                     <Button
                       size="sm"
                       variant="outline"
