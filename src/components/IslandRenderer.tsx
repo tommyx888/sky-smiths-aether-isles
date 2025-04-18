@@ -244,7 +244,8 @@ const IslandRenderer = () => {
     
     // Add building islands from state
     state.player.island.buildings.forEach((building) => {
-      if (building.type === "headquarters") return; // Skip HQ as it's created separately
+      // Skip if this is the headquarters (which we handle separately)
+      if (building.position.x === 5 && building.position.y === 5) return;
       
       const buildingInfo = BUILDINGS_CONFIG[building.type];
       
@@ -347,7 +348,7 @@ const IslandRenderer = () => {
       if (connectedBuilding) {
         let targetPos: THREE.Vector3;
         
-        if (connectedBuilding.type === "headquarters") {
+        if (connectedBuilding.position.x === 5 && connectedBuilding.position.y === 5) {
           // Connect to the HQ at the center
           targetPos = new THREE.Vector3(centerX, 0, centerZ);
         } else {
@@ -377,7 +378,7 @@ const IslandRenderer = () => {
   const findConnectedBuilding = (building: any, buildings: any[]) => {
     // For the starting case, connect to HQ
     if (buildings.length <= 1) {
-      return { type: "headquarters", position: { x: 5, y: 5 } };
+      return { position: { x: 5, y: 5 } };
     }
     
     // Check in all four directions for adjacent buildings
@@ -403,7 +404,7 @@ const IslandRenderer = () => {
     }
     
     // If no adjacent building found, connect to HQ
-    return { type: "headquarters", position: { x: 5, y: 5 } };
+    return { position: { x: 5, y: 5 } };
   };
 
   return <div ref={containerRef} className="w-full h-full rounded-lg overflow-hidden" />;
