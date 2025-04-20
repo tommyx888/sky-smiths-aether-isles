@@ -255,17 +255,18 @@ const IslandRenderer = () => {
       
       // Calculate position on circular arrangement around HQ
       // We convert grid coordinates to 3D space
-      const gridToWorldScale = 2.5;
+      const gridToWorldScale = 5; // Increase this value to space buildings further apart
       const centerX = 5;
       const centerZ = 5;
       
-      const x = centerX + (building.position.x - 5) * gridToWorldScale;
-      const z = centerZ + (building.position.y - 5) * gridToWorldScale;
+      // Direct mapping from grid to world space
+      const x = (building.position.x - centerX) * gridToWorldScale;
+      const z = (building.position.y - centerZ) * gridToWorldScale;
       
       console.log(`Placing building at grid (${building.position.x}, ${building.position.y}) -> world (${x}, ${z})`);
       
       // Create a small island for this building
-      const islandSize = 1 + building.level * 0.2;
+      const islandSize = 1.5 + building.level * 0.2;
       const islandGeometry = new THREE.CylinderGeometry(islandSize, islandSize + 0.3, 0.8, 32);
       const islandMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
       const island = new THREE.Mesh(islandGeometry, islandMaterial);
@@ -293,42 +294,42 @@ const IslandRenderer = () => {
       
       switch (building.type) {
         case "steam_generator":
-          geometry = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8);
+          geometry = new THREE.CylinderGeometry(0.7, 0.8, 1.5, 8);
           color = 0xd6a757; // brass
           break;
         case "ore_mine":
-          geometry = new THREE.BoxGeometry(0.8, 0.7, 0.8);
+          geometry = new THREE.BoxGeometry(1.2, 1.0, 1.2);
           color = 0x8B4513; // brown
           break;
         case "aether_collector":
-          geometry = new THREE.SphereGeometry(0.5, 8, 8);
+          geometry = new THREE.SphereGeometry(0.8, 12, 12);
           color = 0xa67de8; // aether purple
           break;
         case "workshop":
-          geometry = new THREE.BoxGeometry(1.2, 0.8, 1.2);
+          geometry = new THREE.BoxGeometry(1.5, 1.2, 1.5);
           color = 0xc87f51; // copper
           break;
         case "barracks":
-          geometry = new THREE.BoxGeometry(1.2, 0.7, 0.8);
+          geometry = new THREE.BoxGeometry(1.5, 1.0, 1.2);
           color = 0x7d7d7d; // gray
           break;
         case "sky_forge":
-          geometry = new THREE.BoxGeometry(1.2, 1, 1.2);
+          geometry = new THREE.BoxGeometry(1.5, 1.4, 1.5);
           color = 0xff5555; // reddish
           break;
         case "sky_dock":
-          geometry = new THREE.BoxGeometry(1.2, 0.4, 0.8);
+          geometry = new THREE.BoxGeometry(1.8, 0.7, 1.2);
           color = 0x5da5e8; // blue
           break;
         default:
-          geometry = new THREE.BoxGeometry(0.8, 0.5, 0.8);
+          geometry = new THREE.BoxGeometry(1.2, 0.8, 1.2);
           color = 0xffffff;
       }
       
       material = new THREE.MeshLambertMaterial({ color });
       const model = new THREE.Mesh(geometry, material);
       
-      model.position.set(x, 0.4 + building.level * 0.1, z);
+      model.position.set(x, 0.6 + building.level * 0.1, z);
       model.castShadow = true;
       model.receiveShadow = true;
       model.userData = { 
@@ -340,53 +341,37 @@ const IslandRenderer = () => {
       
       scene.add(model);
       
-      // Find connected building to create bridge
-      // For each building, find the nearest valid neighbor to connect to
-      const nearestConnection = findNearestConnection(building, state.player.island.buildings);
+      // Create bridge to the headquarters (center) for buildings directly adjacent to HQ
+      const isAdjacentToHQ = 
+        (Math.abs(building.position.x - 5) === 1 && building.position.y === 5) || 
+        (Math.abs(building.position.y - 5) === 1 && building.position.x === 5);
       
-      if (nearestConnection) {
-        // If connecting to the HQ
-        if (nearestConnection.position.x === 5 && nearestConnection.position.y === 5) {
-          createConnection(
-            scene, 
-            new THREE.Vector3(x, 0, z), 
-            new THREE.Vector3(centerX, 0, centerZ)
-          );
-        } else {
-          // Connect to another building island
-          const connX = centerX + (nearestConnection.position.x - 5) * gridToWorldScale;
-          const connZ = centerZ + (nearestConnection.position.y - 5) * gridToWorldScale;
+      if (isAdjacentToHQ) {
+        createConnection(
+          scene, 
+          new THREE.Vector3(x, 0, z), 
+          new THREE.Vector3(0, 0, 0)  // HQ is at center (0,0,0) in world coords
+        );
+      } else {
+        // Find an existing adjacent building to connect to
+        const adjacentBuilding = findAdjacentBuilding(building, state.player.island.buildings);
+        
+        if (adjacentBuilding) {
+          const adjX = (adjacentBuilding.position.x - centerX) * gridToWorldScale;
+          const adjZ = (adjacentBuilding.position.y - centerZ) * gridToWorldScale;
           
           createConnection(
             scene, 
             new THREE.Vector3(x, 0, z), 
-            new THREE.Vector3(connX, 0, connZ)
+            new THREE.Vector3(adjX, 0, adjZ)
           );
         }
       }
     });
   }, [state.player.island.buildings]);
   
-  // Function to find the nearest connected building
-  const findNearestConnection = (building: any, buildings: any[]) => {
-    // Special case for the first building - connect to HQ
-    if (buildings.length <= 1) {
-      return { position: { x: 5, y: 5 } };
-    }
-    
-    // Check if adjacent to HQ
-    const isNextToHQ = 
-      (Math.abs(building.position.x - 5) === 1 && building.position.y === 5) || 
-      (Math.abs(building.position.y - 5) === 1 && building.position.x === 5);
-    
-    if (isNextToHQ) {
-      return { position: { x: 5, y: 5 } };
-    }
-    
-    // Find the nearest adjacent building
-    let nearestBuilding = null;
-    let shortestDistance = Number.MAX_VALUE;
-    
+  // Function to find an adjacent building
+  const findAdjacentBuilding = (building: any, buildings: any[]) => {
     // Check all 4 adjacent positions
     const directions = [
       { dx: 1, dy: 0 },  // right
@@ -395,16 +380,22 @@ const IslandRenderer = () => {
       { dx: 0, dy: -1 }, // up
     ];
     
+    // First, check for headquarters at position (5,5)
     for (const dir of directions) {
       const adjX = building.position.x + dir.dx;
       const adjY = building.position.y + dir.dy;
       
-      // HQ is special case
       if (adjX === 5 && adjY === 5) {
+        // Return a mock object representing HQ
         return { position: { x: 5, y: 5 } };
       }
+    }
+    
+    // Then check for other buildings
+    for (const dir of directions) {
+      const adjX = building.position.x + dir.dx;
+      const adjY = building.position.y + dir.dy;
       
-      // Look for any building at this position
       const adjacentBuilding = buildings.find(b => 
         b.id !== building.id && 
         b.position.x === adjX && 
@@ -412,25 +403,11 @@ const IslandRenderer = () => {
       );
       
       if (adjacentBuilding) {
-        // Use Manhattan distance to determine the nearest
-        const distance = 
-          Math.abs(adjacentBuilding.position.x - 5) + 
-          Math.abs(adjacentBuilding.position.y - 5);
-        
-        if (distance < shortestDistance) {
-          shortestDistance = distance;
-          nearestBuilding = adjacentBuilding;
-        }
+        return adjacentBuilding;
       }
     }
     
-    // If we found an adjacent building, return it
-    if (nearestBuilding) {
-      return nearestBuilding;
-    }
-    
-    // If no adjacent buildings found (shouldn't happen with our logic), connect to HQ
-    return { position: { x: 5, y: 5 } };
+    return null;
   };
 
   return <div ref={containerRef} className="w-full h-full rounded-lg overflow-hidden" />;
