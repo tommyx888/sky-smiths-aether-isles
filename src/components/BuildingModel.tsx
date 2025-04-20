@@ -2,8 +2,7 @@
 import { useLoader } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BuildingType } from '@/types/game';
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 interface BuildingModelProps {
   type: BuildingType;
@@ -15,8 +14,8 @@ interface BuildingModelProps {
 const BuildingModel = ({ type, position, scale = 1, isMainHq = false }: BuildingModelProps) => {
   const [modelError, setModelError] = useState(false);
   
-  // Load headquarters model if it's the main HQ
-  if (isMainHq) {
+  // Load headquarters model if it's the main HQ or type is headquarters
+  if (isMainHq || type === "headquarters") {
     try {
       const gltf = useLoader(GLTFLoader, '/models/headquarters.glb');
       
@@ -68,6 +67,8 @@ const getBuildingColor = (type: BuildingType): string => {
       return "#ff5555";
     case "sky_dock":
       return "#5da5e8";
+    case "headquarters":
+      return "#4682B4"; // Steel blue color for headquarters
     default:
       return "#ffffff";
   }
@@ -89,6 +90,8 @@ const getPlaceholderGeometry = (type: BuildingType, scale: number) => {
       return <boxGeometry args={[1.5 * scale, 1.4 * scale, 1.5 * scale]} />;
     case "sky_dock":
       return <boxGeometry args={[1.8 * scale, 0.7 * scale, 1.2 * scale]} />;
+    case "headquarters":
+      return <cylinderGeometry args={[1.5 * scale, 2 * scale, 1.5 * scale, 8]} />;
     default:
       return <boxGeometry args={[1.2 * scale, 0.8 * scale, 1.2 * scale]} />;
   }

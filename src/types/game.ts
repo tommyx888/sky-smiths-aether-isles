@@ -1,4 +1,3 @@
-
 export type ResourceType = "steam" | "ore" | "aether";
 
 export interface ResourceAmount {
@@ -14,7 +13,8 @@ export type BuildingType =
   | "workshop" 
   | "barracks" 
   | "sky_forge" 
-  | "sky_dock";
+  | "sky_dock"
+  | "headquarters";
 
 export interface Building {
   id: string;
