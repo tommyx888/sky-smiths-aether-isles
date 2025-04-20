@@ -2,6 +2,8 @@
 import { useLoader } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BuildingType } from '@/types/game';
+import { useState } from 'react';
+import { useEffect } from 'react';
 
 interface BuildingModelProps {
   type: BuildingType;
@@ -11,16 +13,34 @@ interface BuildingModelProps {
 }
 
 const BuildingModel = ({ type, position, scale = 1, isMainHq = false }: BuildingModelProps) => {
+  const [modelError, setModelError] = useState(false);
+  
   // Load headquarters model if it's the main HQ
   if (isMainHq) {
-    const gltf = useLoader(GLTFLoader, '/models/headquarters.glb');
-    return (
-      <primitive 
-        object={gltf.scene} 
-        position={[position.x, position.y, position.z]}
-        scale={[scale, scale, scale]}
-      />
-    );
+    try {
+      const gltf = useLoader(GLTFLoader, '/models/headquarters.glb');
+      
+      useEffect(() => {
+        console.log('Headquarters model loaded successfully:', gltf);
+      }, [gltf]);
+      
+      return (
+        <primitive 
+          object={gltf.scene} 
+          position={[position.x, position.y, position.z]}
+          scale={[scale, scale, scale]}
+        />
+      );
+    } catch (error) {
+      console.error('Error loading headquarters model:', error);
+      // If there's an error loading the model, we'll fall back to the placeholder
+      return (
+        <mesh position={[position.x, position.y, position.z]}>
+          <meshLambertMaterial color={getBuildingColor("headquarters")} />
+          <cylinderGeometry args={[1.5, 2, 1.5, 8]} />
+        </mesh>
+      );
+    }
   }
   
   // For other buildings, use the existing placeholder geometry

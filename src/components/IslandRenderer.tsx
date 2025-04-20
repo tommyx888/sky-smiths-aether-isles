@@ -1,9 +1,10 @@
-
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"; // Fixed import by adding .js extension
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { useGame } from "@/context/GameContext";
 import { BUILDINGS_CONFIG } from "@/config/gameConfig";
+import BuildingModel from "./BuildingModel";
+import { Canvas } from "@react-three/fiber";
 
 const IslandRenderer = () => {
   const { state } = useGame();
@@ -12,6 +13,12 @@ const IslandRenderer = () => {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
+  
+  const [buildings, setBuildings] = useState(state.player.island.buildings);
+  
+  useEffect(() => {
+    setBuildings(state.player.island.buildings);
+  }, [state.player.island.buildings]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -27,7 +34,7 @@ const IslandRenderer = () => {
       0.1,
       1000
     );
-    camera.position.set(15, 15, 15); // Move camera further back for better initial view
+    camera.position.set(15, 15, 15);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
@@ -41,11 +48,11 @@ const IslandRenderer = () => {
 
     // Setup OrbitControls
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true; // Add smooth damping effect
+    controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.minDistance = 5; // Minimum zoom distance
-    controls.maxDistance = 50; // Maximum zoom distance
-    controls.maxPolarAngle = Math.PI / 2; // Prevent camera from going below the ground plane
+    controls.minDistance = 5;
+    controls.maxDistance = 50;
+    controls.maxPolarAngle = Math.PI / 2;
     controlsRef.current = controls;
 
     // Add ambient light
@@ -73,7 +80,6 @@ const IslandRenderer = () => {
       const cloudMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
       const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
       
-      // Position clouds around the islands
       const distance = Math.random() * 30 + 20;
       const angle = Math.random() * Math.PI * 2;
       const height = Math.random() * 10 - 5;
@@ -90,22 +96,15 @@ const IslandRenderer = () => {
     // Create main headquarters in the center
     createMainHeadquarters(scene);
     
-    // Animation loop
     const animate = () => {
       requestAnimationFrame(animate);
-      
-      // Make islands gently float with different phases
       animateIslands(scene, Date.now() * 0.001);
-      
-      // Update controls in animation loop
       controls.update();
-      
       renderer.render(scene, camera);
     };
     
     animate();
     
-    // Handle window resize
     const handleResize = () => {
       if (!containerRef.current) return;
       
@@ -116,7 +115,6 @@ const IslandRenderer = () => {
     
     window.addEventListener("resize", handleResize);
     
-    // Cleanup
     return () => {
       window.removeEventListener("resize", handleResize);
       
@@ -129,7 +127,6 @@ const IslandRenderer = () => {
     };
   }, []);
 
-  // Create the main headquarters island
   const createMainHeadquarters = (scene: THREE.Scene) => {
     // Create the main island (slightly larger)
     const islandGeometry = new THREE.CylinderGeometry(3, 3.5, 1.2, 32);
@@ -150,50 +147,44 @@ const IslandRenderer = () => {
     grass.userData = { parentId: "headquarters" };
     scene.add(grass);
 
-    // Create a simple headquarters building
-    const hqGeometry = new THREE.CylinderGeometry(1.5, 2, 1.5, 8);
-    const hqMaterial = new THREE.MeshLambertMaterial({ color: 0xc87f51 });
-    const hq = new THREE.Mesh(hqGeometry, hqMaterial);
-    hq.position.y = 0.8;
-    hq.castShadow = true;
-    hq.receiveShadow = true;
-    hq.userData = { type: "building", buildingType: "headquarters", id: "headquarters", isMainHq: true };
-    scene.add(hq);
-
-    // Add a small dome on top
-    const domeGeometry = new THREE.SphereGeometry(1, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-    const domeMaterial = new THREE.MeshLambertMaterial({ color: 0x5da5e8 });
-    const dome = new THREE.Mesh(domeGeometry, domeMaterial);
-    dome.position.y = 1.7;
-    dome.castShadow = true;
-    dome.receiveShadow = true;
-    dome.userData = { parentId: "headquarters" };
-    scene.add(dome);
+    // Use our building model component by creating a custom element
+    // We'll just create a placeholder mesh here and our React component will render the model
+    const hqGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    const hqMaterial = new THREE.MeshBasicMaterial({ visible: false });
+    const hqPlaceholder = new THREE.Mesh(hqGeometry, hqMaterial);
+    hqPlaceholder.position.y = 0.8;
+    hqPlaceholder.userData = { 
+      type: "building", 
+      buildingType: "headquarters", 
+      id: "headquarters", 
+      isMainHq: true 
+    };
+    scene.add(hqPlaceholder);
+    
+    // Log to confirm we're creating the main HQ
+    console.log("Created main HQ placeholder for GLB model");
   };
 
-  // Function to animate islands with floating effect
   const animateIslands = (scene: THREE.Scene, time: number) => {
     scene.children.forEach((child) => {
       if (child.userData && child.userData.type === "island") {
         const offset = child.userData.floatOffset || 0;
         child.position.y = -0.6 + Math.sin(time * 0.5 + offset) * 0.1;
         
-        // Also animate any child elements tied to this island
         const islandId = child.userData.id;
         scene.children.forEach((possibleChild) => {
           if (possibleChild.userData && possibleChild.userData.parentId === islandId) {
-            possibleChild.position.y = child.position.y + 0.6; // Maintain relative position
+            possibleChild.position.y = child.position.y + 0.6;
           }
           
           if (possibleChild.userData && possibleChild.userData.buildingId === islandId) {
-            possibleChild.position.y = child.position.y + 1.4; // Position building on top
+            possibleChild.position.y = child.position.y + 1.4;
           }
         });
       }
     });
   };
 
-  // Create connection between islands (a bridge)
   const createConnection = (scene: THREE.Scene, start: THREE.Vector3, end: THREE.Vector3) => {
     const direction = new THREE.Vector3().subVectors(end, start);
     const distance = direction.length();
@@ -203,14 +194,12 @@ const IslandRenderer = () => {
     const bridgeMaterial = new THREE.MeshLambertMaterial({ color: 0xd6a757 });
     const bridge = new THREE.Mesh(bridgeGeometry, bridgeMaterial);
     
-    // Position bridge at midpoint
     const midpoint = new THREE.Vector3().addVectors(
       start, 
       new THREE.Vector3().copy(direction).multiplyScalar(distance / 2)
     );
     bridge.position.copy(midpoint);
     
-    // Rotate bridge to connect islands
     bridge.lookAt(end);
     bridge.rotateY(Math.PI / 2);
     
@@ -220,11 +209,9 @@ const IslandRenderer = () => {
     
     scene.add(bridge);
     
-    // Add decorative ropes/cables
     const ropeGeometry = new THREE.CylinderGeometry(0.03, 0.03, distance + 0.2, 8);
     const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
     
-    // Left rope
     const leftRope = new THREE.Mesh(ropeGeometry, ropeMaterial);
     leftRope.position.copy(midpoint);
     leftRope.position.y += 0.15;
@@ -233,7 +220,6 @@ const IslandRenderer = () => {
     leftRope.rotateX(Math.PI / 2);
     scene.add(leftRope);
     
-    // Right rope
     const rightRope = new THREE.Mesh(ropeGeometry, ropeMaterial);
     rightRope.position.copy(midpoint);
     rightRope.position.y += 0.15;
@@ -243,12 +229,10 @@ const IslandRenderer = () => {
     scene.add(rightRope);
   };
 
-  // Update buildings when state changes
   useEffect(() => {
     if (!sceneRef.current) return;
     const scene = sceneRef.current;
     
-    // Remove old building islands and bridges
     const objectsToRemove = [];
     scene.children.forEach((child) => {
       if ((child.userData && child.userData.type === "building" && !child.userData.isMainHq) || 
@@ -258,29 +242,22 @@ const IslandRenderer = () => {
       }
     });
     
-    // Remove all objects in a separate loop to avoid issues with scene children being modified during iteration
     objectsToRemove.forEach(obj => scene.remove(obj));
     
-    // Add building islands from state
     state.player.island.buildings.forEach((building) => {
-      // Skip if this is the headquarters (which we handle separately)
       if (building.position.x === 5 && building.position.y === 5) return;
       
       const buildingInfo = BUILDINGS_CONFIG[building.type];
       
-      // Calculate position on circular arrangement around HQ
-      // We convert grid coordinates to 3D space
-      const gridToWorldScale = 5; // Increase this value to space buildings further apart
+      const gridToWorldScale = 5;
       const centerX = 5;
       const centerZ = 5;
       
-      // Direct mapping from grid to world space
       const x = (building.position.x - centerX) * gridToWorldScale;
       const z = (building.position.y - centerZ) * gridToWorldScale;
       
       console.log(`Placing building at grid (${building.position.x}, ${building.position.y}) -> world (${x}, ${z})`);
       
-      // Create a small island for this building
       const islandSize = 1.5 + building.level * 0.2;
       const islandGeometry = new THREE.CylinderGeometry(islandSize, islandSize + 0.3, 0.8, 32);
       const islandMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
@@ -295,7 +272,6 @@ const IslandRenderer = () => {
       };
       scene.add(island);
 
-      // Create grass top layer
       const grassGeometry = new THREE.CylinderGeometry(islandSize - 0.1, islandSize, 0.2, 32);
       const grassMaterial = new THREE.MeshLambertMaterial({ color: 0x567d46 });
       const grass = new THREE.Mesh(grassGeometry, grassMaterial);
@@ -304,37 +280,36 @@ const IslandRenderer = () => {
       grass.userData = { parentId: building.id };
       scene.add(grass);
       
-      // Create the building model
       let geometry, material, color;
       
       switch (building.type) {
         case "steam_generator":
           geometry = new THREE.CylinderGeometry(0.7, 0.8, 1.5, 8);
-          color = 0xd6a757; // brass
+          color = 0xd6a757;
           break;
         case "ore_mine":
           geometry = new THREE.BoxGeometry(1.2, 1.0, 1.2);
-          color = 0x8B4513; // brown
+          color = 0x8B4513;
           break;
         case "aether_collector":
           geometry = new THREE.SphereGeometry(0.8, 12, 12);
-          color = 0xa67de8; // aether purple
+          color = 0xa67de8;
           break;
         case "workshop":
           geometry = new THREE.BoxGeometry(1.5, 1.2, 1.5);
-          color = 0xc87f51; // copper
+          color = 0xc87f51;
           break;
         case "barracks":
           geometry = new THREE.BoxGeometry(1.5, 1.0, 1.2);
-          color = 0x7d7d7d; // gray
+          color = 0x7d7d7d;
           break;
         case "sky_forge":
           geometry = new THREE.BoxGeometry(1.5, 1.4, 1.5);
-          color = 0xff5555; // reddish
+          color = 0xff5555;
           break;
         case "sky_dock":
           geometry = new THREE.BoxGeometry(1.8, 0.7, 1.2);
-          color = 0x5da5e8; // blue
+          color = 0x5da5e8;
           break;
         default:
           geometry = new THREE.BoxGeometry(1.2, 0.8, 1.2);
@@ -356,7 +331,6 @@ const IslandRenderer = () => {
       
       scene.add(model);
       
-      // Create bridge to the headquarters (center) for buildings directly adjacent to HQ
       const isAdjacentToHQ = 
         (Math.abs(building.position.x - 5) === 1 && building.position.y === 5) || 
         (Math.abs(building.position.y - 5) === 1 && building.position.x === 5);
@@ -365,10 +339,9 @@ const IslandRenderer = () => {
         createConnection(
           scene, 
           new THREE.Vector3(x, 0, z), 
-          new THREE.Vector3(0, 0, 0)  // HQ is at center (0,0,0) in world coords
+          new THREE.Vector3(0, 0, 0)
         );
       } else {
-        // Find an existing adjacent building to connect to
         const adjacentBuilding = findAdjacentBuilding(building, state.player.island.buildings);
         
         if (adjacentBuilding) {
@@ -385,28 +358,23 @@ const IslandRenderer = () => {
     });
   }, [state.player.island.buildings]);
   
-  // Function to find an adjacent building
   const findAdjacentBuilding = (building: any, buildings: any[]) => {
-    // Check all 4 adjacent positions
     const directions = [
-      { dx: 1, dy: 0 },  // right
-      { dx: -1, dy: 0 }, // left
-      { dx: 0, dy: 1 },  // down
-      { dx: 0, dy: -1 }, // up
+      { dx: 1, dy: 0 },
+      { dx: -1, dy: 0 },
+      { dx: 0, dy: 1 },
+      { dx: 0, dy: -1 },
     ];
     
-    // First, check for headquarters at position (5,5)
     for (const dir of directions) {
       const adjX = building.position.x + dir.dx;
       const adjY = building.position.y + dir.dy;
       
       if (adjX === 5 && adjY === 5) {
-        // Return a mock object representing HQ
         return { position: { x: 5, y: 5 } };
       }
     }
     
-    // Then check for other buildings
     for (const dir of directions) {
       const adjX = building.position.x + dir.dx;
       const adjY = building.position.y + dir.dy;
