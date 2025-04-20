@@ -128,36 +128,42 @@ const IslandRenderer = () => {
   }, []);
 
   const createMainHeadquarters = (scene: THREE.Scene) => {
-    // Create the main island (slightly larger)
-    const islandGeometry = new THREE.CylinderGeometry(3, 3.5, 1.2, 32);
-    const islandMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-    const island = new THREE.Mesh(islandGeometry, islandMaterial);
-    island.position.y = -0.6;
-    island.castShadow = true;
-    island.receiveShadow = true;
-    island.userData = { type: "island", id: "headquarters", floatOffset: Math.random() * Math.PI * 2 };
-    scene.add(island);
+    // Check if we want to create the island platform or if the GLB model already includes it
+    const hqIncludesIsland = true; // Set this to true if your GLB model includes the island
+    
+    if (!hqIncludesIsland) {
+      // Create the main island (slightly larger) only if the model doesn't include it
+      const islandGeometry = new THREE.CylinderGeometry(3, 3.5, 1.2, 32);
+      const islandMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+      const island = new THREE.Mesh(islandGeometry, islandMaterial);
+      island.position.y = -0.6;
+      island.castShadow = true;
+      island.receiveShadow = true;
+      island.userData = { type: "island", id: "headquarters", floatOffset: Math.random() * Math.PI * 2 };
+      scene.add(island);
 
-    // Create grass top layer
-    const grassGeometry = new THREE.CylinderGeometry(2.9, 3, 0.2, 32);
-    const grassMaterial = new THREE.MeshLambertMaterial({ color: 0x567d46 });
-    const grass = new THREE.Mesh(grassGeometry, grassMaterial);
-    grass.position.y = 0;
-    grass.receiveShadow = true;
-    grass.userData = { parentId: "headquarters" };
-    scene.add(grass);
+      // Create grass top layer
+      const grassGeometry = new THREE.CylinderGeometry(2.9, 3, 0.2, 32);
+      const grassMaterial = new THREE.MeshLambertMaterial({ color: 0x567d46 });
+      const grass = new THREE.Mesh(grassGeometry, grassMaterial);
+      grass.position.y = 0;
+      grass.receiveShadow = true;
+      grass.userData = { parentId: "headquarters" };
+      scene.add(grass);
+    }
 
     // Use our building model component by creating a custom element
     // We'll just create a placeholder mesh here and our React component will render the model
     const hqGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
     const hqMaterial = new THREE.MeshBasicMaterial({ visible: false });
     const hqPlaceholder = new THREE.Mesh(hqGeometry, hqMaterial);
-    hqPlaceholder.position.y = 0.8;
+    hqPlaceholder.position.y = hqIncludesIsland ? 0 : 0.8; // Adjust position based on whether model includes island
     hqPlaceholder.userData = { 
       type: "building", 
       buildingType: "headquarters", 
       id: "headquarters", 
-      isMainHq: true 
+      isMainHq: true,
+      includesIsland: hqIncludesIsland
     };
     scene.add(hqPlaceholder);
     

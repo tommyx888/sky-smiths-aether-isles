@@ -9,9 +9,10 @@ interface BuildingModelProps {
   position: { x: number; y: number; z: number };
   scale?: number;
   isMainHq?: boolean;
+  includesIsland?: boolean;
 }
 
-const BuildingModel = ({ type, position, scale = 1, isMainHq = false }: BuildingModelProps) => {
+const BuildingModel = ({ type, position, scale = 1, isMainHq = false, includesIsland = false }: BuildingModelProps) => {
   const [modelError, setModelError] = useState(false);
   
   // Load headquarters model if it's the main HQ or type is headquarters
@@ -23,15 +24,19 @@ const BuildingModel = ({ type, position, scale = 1, isMainHq = false }: Building
         console.log('Headquarters model loaded successfully:', gltf);
       }, [gltf]);
       
+      // Position adjustment if the model already includes an island
+      const yPosition = includesIsland ? position.y - 0.6 : position.y;
+      
       return (
         <primitive 
           object={gltf.scene} 
-          position={[position.x, position.y, position.z]}
+          position={[position.x, yPosition, position.z]}
           scale={[scale, scale, scale]}
         />
       );
     } catch (error) {
       console.error('Error loading headquarters model:', error);
+      setModelError(true);
       // If there's an error loading the model, we'll fall back to the placeholder
       return (
         <mesh position={[position.x, position.y, position.z]}>
