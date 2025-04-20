@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useGame } from "@/context/GameContext";
 import { BuildingType, Building } from "@/types/game";
@@ -14,7 +13,8 @@ import {
   Wrench,
   Users,
   Shield,
-  Anchor
+  Anchor,
+  Home
 } from "lucide-react";
 
 const BuildingSelector = () => {
@@ -47,33 +47,37 @@ const BuildingSelector = () => {
     setPosition({ x, y });
   };
   
-  // Check if a cell is adjacent to any existing building
+  const isAdjacentToHeadquarters = (x: number, y: number): boolean => {
+    const hqX = 5;
+    const hqY = 5;
+    
+    return (
+      (Math.abs(x - hqX) === 1 && y === hqY) || // Left or right
+      (Math.abs(y - hqY) === 1 && x === hqX)     // Up or down
+    );
+  };
+  
   const isAdjacentToExistingBuilding = (x: number, y: number): boolean => {
-    // If this is the first building, allow placement at the center
     if (state.player.island.buildings.length === 0) {
-      return x === 5 && y === 5;
+      return isAdjacentToHeadquarters(x, y);
     }
     
-    // Find one adjacent existing building
     return state.player.island.buildings.some(building => {
       const dx = Math.abs(building.position.x - x);
       const dy = Math.abs(building.position.y - y);
-      
-      // Adjacent means sharing an edge, not diagonally
       return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
     });
   };
   
-  // Determine if a cell can be built on (is adjacent to existing building and not occupied)
   const canBuildOnCell = (x: number, y: number): boolean => {
-    // Check if cell is occupied
+    if (x === 5 && y === 5) return false;
+    
     const isOccupied = state.player.island.buildings.some(
       building => building.position.x === x && building.position.y === y
     );
     
     if (isOccupied) return false;
     
-    // Check if adjacent to existing building
     return isAdjacentToExistingBuilding(x, y);
   };
   
@@ -183,18 +187,26 @@ const BuildingSelector = () => {
                 y >= position.y &&
                 y < position.y + (BUILDINGS_CONFIG[selectedType]?.size.height || 1);
               
+              const isHQ = x === 5 && y === 5;
               const canBuild = canBuildOnCell(x, y);
               
               return (
                 <div
                   key={index}
-                  className={`building-grid-cell cursor-pointer ${
+                  className={`building-grid-cell cursor-pointer relative ${
                     isSelected ? "bg-brass/40 border-brass" : ""
                   } ${
+                    isHQ ? "bg-primary/20 border-primary" : 
                     canBuild ? "bg-green-100/20" : "bg-red-300/10 opacity-50"
                   }`}
                   onClick={() => canBuild && handlePositionChange(x, y)}
-                />
+                >
+                  {isHQ && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Home className="w-4 h-4 text-primary" />
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
