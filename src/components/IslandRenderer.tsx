@@ -1,6 +1,6 @@
-
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { useGame } from "@/context/GameContext";
 import { BUILDINGS_CONFIG } from "@/config/gameConfig";
 
@@ -10,6 +10,7 @@ const IslandRenderer = () => {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -25,8 +26,8 @@ const IslandRenderer = () => {
       0.1,
       1000
     );
-    camera.position.set(5, 10, 10);
-    camera.lookAt(5, 0, 5);
+    camera.position.set(15, 15, 15); // Move camera further back for better initial view
+    camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
     // Setup renderer
@@ -36,6 +37,15 @@ const IslandRenderer = () => {
     renderer.shadowMap.enabled = true;
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
+
+    // Setup OrbitControls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; // Add smooth damping effect
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 5; // Minimum zoom distance
+    controls.maxDistance = 50; // Maximum zoom distance
+    controls.maxPolarAngle = Math.PI / 2; // Prevent camera from going below the ground plane
+    controlsRef.current = controls;
 
     // Add ambient light
     const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
@@ -86,6 +96,9 @@ const IslandRenderer = () => {
       // Make islands gently float with different phases
       animateIslands(scene, Date.now() * 0.001);
       
+      // Update controls in animation loop
+      controls.update();
+      
       renderer.render(scene, camera);
     };
     
@@ -110,6 +123,7 @@ const IslandRenderer = () => {
         containerRef.current.removeChild(renderer.domElement);
       }
       
+      controls.dispose();
       renderer.dispose();
     };
   }, []);
