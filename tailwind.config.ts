@@ -32,7 +32,6 @@ export default {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))'
         },
-        // Steampunk theme colors
         brass: {
           light: '#f5d78e',
           DEFAULT: '#d6a757',
@@ -69,36 +68,14 @@ export default {
         'accent-glow': '0 0 20px rgba(128, 0, 128, 0.3)',
       },
       animation: {
-        'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up': 'accordion-up 0.2s ease-out',
         'float': 'float 6s ease-in-out infinite',
         'subtle-pulse': 'pulse 3s ease-in-out infinite',
         'steam-rise': 'steam-rise 3s ease-out infinite'
       },
       keyframes: {
-        'accordion-down': {
-          from: {
-            height: '0'
-          },
-          to: {
-            height: 'var(--radix-accordion-content-height)'
-          }
-        },
-        'accordion-up': {
-          from: {
-            height: 'var(--radix-accordion-content-height)'
-          },
-          to: {
-            height: '0'
-          }
-        },
         'float': {
           '0%, 100%': { transform: 'translateY(0px)' },
           '50%': { transform: 'translateY(-10px)' }
-        },
-        'spin-slow': {
-          '0%': { transform: 'rotate(0deg)' },
-          '100%': { transform: 'rotate(360deg)' }
         },
         'steam-rise': {
           '0%': { 

@@ -75,47 +75,60 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%);
   }
 }
 
 @layer components {
   .glass-panel {
-    @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl;
+    @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl 
+           transition-all duration-300 hover:shadow-2xl hover:border-white/30;
   }
 
   .gradient-border {
-    @apply relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-primary/30 before:to-accent/30 before:rounded-[inherit] before:-z-10;
+    @apply relative before:absolute before:inset-0 before:bg-gradient-to-br 
+           before:from-primary/30 before:to-accent/30 before:rounded-[inherit] 
+           before:-z-10 before:transition-all before:duration-300
+           hover:before:from-primary/40 hover:before:to-accent/40;
   }
 
   .hover-scale {
-    @apply transition-all duration-300 hover:scale-105 hover:shadow-lg;
+    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-lg;
   }
 
   .steampunk-panel {
-    @apply border-2 border-brass rounded-lg shadow-md p-4 relative 
-           gradient-border hover-scale bg-[hsl(var(--card))] backdrop-blur-sm;
+    @apply border-2 border-brass rounded-lg p-4 relative glass-panel
+           gradient-border hover-scale bg-[hsl(var(--card))];
     background-image: repeating-linear-gradient(
       45deg,
       transparent,
       transparent 10px,
-      rgba(214, 167, 87, 0.05) 10px,
-      rgba(214, 167, 87, 0.05) 20px
+      rgba(214, 167, 87, 0.03) 10px,
+      rgba(214, 167, 87, 0.03) 20px
     );
   }
   
   .building-grid-cell {
-    @apply w-full aspect-square border border-gray-300/30 hover:border-brass transition-colors;
+    @apply w-full aspect-square border border-gray-300/20 
+           hover:border-brass transition-all duration-300 
+           hover:shadow-[0_0_15px_rgba(214,167,87,0.2)];
+  }
+
+  .resource-counter {
+    @apply flex items-center gap-2 px-3 py-1.5 rounded-lg
+           bg-white/5 backdrop-blur-sm border border-white/10
+           hover:bg-white/10 transition-colors duration-300;
   }
 }
 
 @layer utilities {
   .text-gradient {
-    @apply bg-gradient-to-br from-primary via-primary/80 to-accent bg-clip-text text-transparent;
+    @apply bg-gradient-to-br from-brass via-brass/80 to-copper bg-clip-text text-transparent;
   }
   
   .sky-island-shadow {
     @apply after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 
-           after:w-[120%] after:h-3 after:bg-black/10 after:blur-md after:rounded-full;
+           after:w-[120%] after:h-3 after:bg-black/20 after:blur-md after:rounded-full;
   }
   
   .bridge-connection {
@@ -124,7 +137,8 @@
   
   .bridge-connection::before, 
   .bridge-connection::after {
-    @apply content-[''] absolute w-1 h-1 bg-brass rounded-full top-1/2 -translate-y-1/2;
+    @apply content-[''] absolute w-1.5 h-1.5 bg-brass rounded-full top-1/2 -translate-y-1/2
+           shadow-[0_0_10px_rgba(214,167,87,0.5)];
   }
   
   .bridge-connection::before {
