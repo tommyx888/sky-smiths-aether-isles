@@ -3,6 +3,7 @@ import { useLoader } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BuildingType } from '@/types/game';
 import { useState, useEffect } from 'react';
+import * as THREE from 'three';
 
 interface BuildingModelProps {
   type: BuildingType;
@@ -22,6 +23,13 @@ const BuildingModel = ({ type, position, scale = 1, isMainHq = false, includesIs
       
       useEffect(() => {
         console.log('Headquarters model loaded successfully:', gltf);
+        
+        // Scale the model
+        gltf.scene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            console.log('Found mesh in headquarters model:', child.name);
+          }
+        });
       }, [gltf]);
       
       // Position adjustment if the model already includes an island
