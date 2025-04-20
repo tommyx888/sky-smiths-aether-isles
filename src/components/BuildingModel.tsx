@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+
 import { useLoader } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BuildingType } from '@/types/game';
@@ -7,15 +7,23 @@ interface BuildingModelProps {
   type: BuildingType;
   position: { x: number; y: number; z: number };
   scale?: number;
+  isMainHq?: boolean;
 }
 
-const BuildingModel = ({ type, position, scale = 1 }: BuildingModelProps) => {
-  // This is where you'll load your custom model
-  // For now, we'll use placeholder geometry
-  // Replace modelPath with your actual model path when you have it
-  // const modelPath = `/models/${type}.glb`;
-  // const gltf = useLoader(GLTFLoader, modelPath);
+const BuildingModel = ({ type, position, scale = 1, isMainHq = false }: BuildingModelProps) => {
+  // Load headquarters model if it's the main HQ
+  if (isMainHq) {
+    const gltf = useLoader(GLTFLoader, '/models/headquarters.glb');
+    return (
+      <primitive 
+        object={gltf.scene} 
+        position={[position.x, position.y, position.z]}
+        scale={[scale, scale, scale]}
+      />
+    );
+  }
   
+  // For other buildings, use the existing placeholder geometry
   return (
     <mesh position={[position.x, position.y, position.z]}>
       <meshLambertMaterial color={getBuildingColor(type)} />
