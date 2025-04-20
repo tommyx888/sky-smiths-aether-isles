@@ -142,7 +142,7 @@ const IslandRenderer = () => {
     hq.position.y = 0.8;
     hq.castShadow = true;
     hq.receiveShadow = true;
-    hq.userData = { type: "building", id: "headquarters", isMainHq: true };
+    hq.userData = { type: "building", buildingType: "headquarters", id: "headquarters", isMainHq: true };
     scene.add(hq);
 
     // Add a small dome on top
@@ -234,13 +234,17 @@ const IslandRenderer = () => {
     const scene = sceneRef.current;
     
     // Remove old building islands and bridges
+    const objectsToRemove = [];
     scene.children.forEach((child) => {
       if ((child.userData && child.userData.type === "building" && !child.userData.isMainHq) || 
           (child.userData && child.userData.type === "island" && child.userData.id !== "headquarters") ||
           (child.userData && child.userData.type === "bridge")) {
-        scene.remove(child);
+        objectsToRemove.push(child);
       }
     });
+    
+    // Remove all objects in a separate loop to avoid issues with scene children being modified during iteration
+    objectsToRemove.forEach(obj => scene.remove(obj));
     
     // Add building islands from state
     state.player.island.buildings.forEach((building) => {
@@ -250,21 +254,15 @@ const IslandRenderer = () => {
       const buildingInfo = BUILDINGS_CONFIG[building.type];
       
       // Calculate position on circular arrangement around HQ
-      // We use the grid position to determine angle and distance
+      // We convert grid coordinates to 3D space
+      const gridToWorldScale = 2.5;
       const centerX = 5;
       const centerZ = 5;
-      const distance = Math.sqrt(
-        Math.pow(building.position.x - 5, 2) + 
-        Math.pow(building.position.y - 5, 2)
-      ) * 2.5;
       
-      const angle = Math.atan2(
-        building.position.y - 5,
-        building.position.x - 5
-      );
+      const x = centerX + (building.position.x - 5) * gridToWorldScale;
+      const z = centerZ + (building.position.y - 5) * gridToWorldScale;
       
-      const x = centerX + Math.cos(angle) * distance;
-      const z = centerZ + Math.sin(angle) * distance;
+      console.log(`Placing building at grid (${building.position.x}, ${building.position.y}) -> world (${x}, ${z})`);
       
       // Create a small island for this building
       const islandSize = 1 + building.level * 0.2;
@@ -295,15 +293,15 @@ const IslandRenderer = () => {
       
       switch (building.type) {
         case "steam_generator":
-          geometry = new THREE.CylinderGeometry(0.3, 0.4, 0.8, 8);
+          geometry = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8);
           color = 0xd6a757; // brass
           break;
         case "ore_mine":
-          geometry = new THREE.BoxGeometry(0.8, 0.5, 0.8);
+          geometry = new THREE.BoxGeometry(0.8, 0.7, 0.8);
           color = 0x8B4513; // brown
           break;
         case "aether_collector":
-          geometry = new THREE.SphereGeometry(0.4, 8, 8);
+          geometry = new THREE.SphereGeometry(0.5, 8, 8);
           color = 0xa67de8; // aether purple
           break;
         case "workshop":
@@ -334,7 +332,8 @@ const IslandRenderer = () => {
       model.castShadow = true;
       model.receiveShadow = true;
       model.userData = { 
-        type: "building", 
+        type: "building",
+        buildingType: building.type,
         id: building.id, 
         buildingId: building.id 
       };
@@ -342,68 +341,95 @@ const IslandRenderer = () => {
       scene.add(model);
       
       // Find connected building to create bridge
-      // Determine which existing island to connect to
-      const connectedBuilding = findConnectedBuilding(building, state.player.island.buildings);
+      // For each building, find the nearest valid neighbor to connect to
+      const nearestConnection = findNearestConnection(building, state.player.island.buildings);
       
-      if (connectedBuilding) {
-        let targetPos: THREE.Vector3;
-        
-        if (connectedBuilding.position.x === 5 && connectedBuilding.position.y === 5) {
-          // Connect to the HQ at the center
-          targetPos = new THREE.Vector3(centerX, 0, centerZ);
+      if (nearestConnection) {
+        // If connecting to the HQ
+        if (nearestConnection.position.x === 5 && nearestConnection.position.y === 5) {
+          createConnection(
+            scene, 
+            new THREE.Vector3(x, 0, z), 
+            new THREE.Vector3(centerX, 0, centerZ)
+          );
         } else {
           // Connect to another building island
-          const connAngle = Math.atan2(
-            connectedBuilding.position.y - 5,
-            connectedBuilding.position.x - 5
+          const connX = centerX + (nearestConnection.position.x - 5) * gridToWorldScale;
+          const connZ = centerZ + (nearestConnection.position.y - 5) * gridToWorldScale;
+          
+          createConnection(
+            scene, 
+            new THREE.Vector3(x, 0, z), 
+            new THREE.Vector3(connX, 0, connZ)
           );
-          
-          const connDistance = Math.sqrt(
-            Math.pow(connectedBuilding.position.x - 5, 2) + 
-            Math.pow(connectedBuilding.position.y - 5, 2)
-          ) * 2.5;
-          
-          const connX = centerX + Math.cos(connAngle) * connDistance;
-          const connZ = centerZ + Math.sin(connAngle) * connDistance;
-          
-          targetPos = new THREE.Vector3(connX, 0, connZ);
         }
-        
-        createConnection(scene, new THREE.Vector3(x, 0, z), targetPos);
       }
     });
   }, [state.player.island.buildings]);
   
-  // Function to find a connected building
-  const findConnectedBuilding = (building: any, buildings: any[]) => {
-    // For the starting case, connect to HQ
+  // Function to find the nearest connected building
+  const findNearestConnection = (building: any, buildings: any[]) => {
+    // Special case for the first building - connect to HQ
     if (buildings.length <= 1) {
       return { position: { x: 5, y: 5 } };
     }
     
-    // Check in all four directions for adjacent buildings
+    // Check if adjacent to HQ
+    const isNextToHQ = 
+      (Math.abs(building.position.x - 5) === 1 && building.position.y === 5) || 
+      (Math.abs(building.position.y - 5) === 1 && building.position.x === 5);
+    
+    if (isNextToHQ) {
+      return { position: { x: 5, y: 5 } };
+    }
+    
+    // Find the nearest adjacent building
+    let nearestBuilding = null;
+    let shortestDistance = Number.MAX_VALUE;
+    
+    // Check all 4 adjacent positions
     const directions = [
-      { dx: 1, dy: 0 }, // Right
-      { dx: -1, dy: 0 }, // Left
-      { dx: 0, dy: 1 }, // Down
-      { dx: 0, dy: -1 }, // Up
+      { dx: 1, dy: 0 },  // right
+      { dx: -1, dy: 0 }, // left
+      { dx: 0, dy: 1 },  // down
+      { dx: 0, dy: -1 }, // up
     ];
     
     for (const dir of directions) {
       const adjX = building.position.x + dir.dx;
       const adjY = building.position.y + dir.dy;
       
-      // Look for existing building at this position
-      const connected = buildings.find(b => 
+      // HQ is special case
+      if (adjX === 5 && adjY === 5) {
+        return { position: { x: 5, y: 5 } };
+      }
+      
+      // Look for any building at this position
+      const adjacentBuilding = buildings.find(b => 
         b.id !== building.id && 
         b.position.x === adjX && 
         b.position.y === adjY
       );
       
-      if (connected) return connected;
+      if (adjacentBuilding) {
+        // Use Manhattan distance to determine the nearest
+        const distance = 
+          Math.abs(adjacentBuilding.position.x - 5) + 
+          Math.abs(adjacentBuilding.position.y - 5);
+        
+        if (distance < shortestDistance) {
+          shortestDistance = distance;
+          nearestBuilding = adjacentBuilding;
+        }
+      }
     }
     
-    // If no adjacent building found, connect to HQ
+    // If we found an adjacent building, return it
+    if (nearestBuilding) {
+      return nearestBuilding;
+    }
+    
+    // If no adjacent buildings found (shouldn't happen with our logic), connect to HQ
     return { position: { x: 5, y: 5 } };
   };
 
