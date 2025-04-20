@@ -1,7 +1,6 @@
-
 import { useEffect } from 'react';
 import { useLoader } from '@react-three/fiber';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BuildingType } from '@/types/game';
 
 interface BuildingModelProps {
@@ -68,4 +67,3 @@ const getPlaceholderGeometry = (type: BuildingType, scale: number) => {
 };
 
 export default BuildingModel;
-
