@@ -85,7 +85,7 @@ const universeReducer = (state: typeof initialState, action: UniverseAction) => 
           ...state.map,
           locations: state.map.locations.map(loc => 
             loc.id === action.payload.locationId && action.payload.victory 
-              ? { ...loc, owner: "player" } 
+              ? { ...loc, owner: "player" as "player" | "ai" | null } 
               : loc
           )
         },
@@ -173,7 +173,11 @@ export const UniverseProvider = ({ children }: { children: ReactNode }) => {
       }
       
       // Move player to this location
-      await universeService.movePlayerOnMap(state.map.id, location.coordinates);
+      if (state.map.id) {
+        await universeService.movePlayerOnMap(state.map.id, location.coordinates);
+      } else {
+        throw new Error("Map ID is missing");
+      }
       
       // If location not discovered, discover it
       if (!location.discovered) {

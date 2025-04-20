@@ -28,6 +28,7 @@ export type LocationType =
   | "pirate_hideout";
 
 export interface UniverseMapData {
+  id?: string; // Adding optional id property
   width: number;
   height: number;
   locations: MapLocation[];
