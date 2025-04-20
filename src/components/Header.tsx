@@ -1,38 +1,31 @@
 
-import { useAuth } from "@/context/AuthContext";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Compass, LogOut } from "lucide-react";
-import ResourceDisplay from "./ResourceDisplay";
+import { useAuth } from "@/context/AuthContext";
+import { useGame } from "@/context/GameContext";
+import ResourceDisplay from "@/components/ResourceDisplay";
+import NavMenu from "@/components/NavMenu";
 
 const Header = () => {
-  const { user, signOut } = useAuth();
-  
-  const handleLogout = () => {
-    signOut();
+  const { signOut } = useAuth();
+  const { state } = useGame();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
   };
   
   return (
-    <header className="border-b border-border/40 bg-glass-gradient backdrop-blur-md">
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Compass className="h-6 w-6 text-primary animate-subtle-pulse" />
-          <span className="text-xl font-bold text-gradient">SkyPort Haven</span>
+    <header className="bg-glass-gradient backdrop-blur-lg border-b border-white/10 py-4 px-6 sticky top-0 z-50">
+      <div className="container mx-auto flex justify-between items-center">
+        <div className="flex items-center gap-6">
+          <h1 className="text-xl font-bold text-gradient">Sky Empires</h1>
+          <NavMenu />
         </div>
         
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <ResourceDisplay />
-          
-          {user && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="flex items-center gap-2 hover-scale"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4 text-destructive" />
-              <span className="hidden sm:inline">Log out</span>
-            </Button>
-          )}
+          <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
         </div>
       </div>
     </header>
