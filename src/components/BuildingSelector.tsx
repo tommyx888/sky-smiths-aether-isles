@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useGame } from "@/context/GameContext";
 import { BuildingType, Building } from "@/types/game";
@@ -58,10 +59,13 @@ const BuildingSelector = () => {
   };
   
   const isAdjacentToExistingBuilding = (x: number, y: number): boolean => {
-    if (state.player.island.buildings.length === 0) {
-      return isAdjacentToHeadquarters(x, y);
+    // First check if it's adjacent to the headquarters 
+    // (headquarters is technically not in the buildings array)
+    if (isAdjacentToHeadquarters(x, y)) {
+      return true;
     }
     
+    // Then check if it's adjacent to any existing building
     return state.player.island.buildings.some(building => {
       const dx = Math.abs(building.position.x - x);
       const dy = Math.abs(building.position.y - y);
@@ -70,14 +74,17 @@ const BuildingSelector = () => {
   };
   
   const canBuildOnCell = (x: number, y: number): boolean => {
+    // Can't build on the headquarters itself
     if (x === 5 && y === 5) return false;
     
+    // Can't build on occupied cells
     const isOccupied = state.player.island.buildings.some(
       building => building.position.x === x && building.position.y === y
     );
     
     if (isOccupied) return false;
     
+    // Must be adjacent to either the headquarters or an existing building
     return isAdjacentToExistingBuilding(x, y);
   };
   
